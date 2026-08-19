@@ -1,0 +1,12 @@
+{
+  "name": "has-portal-metadata-poc",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "node apps/portal/app.js"
+  },
+  "dependencies": {
+    "@hono/node-server": "latest",
+    "hono": "latest"
+  }
+}
