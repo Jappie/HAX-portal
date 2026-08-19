@@ -1,19 +1,141 @@
 import { Hono } from 'hono'
-import { html } from 'hono/html'
+import { customerViews } from './views.js'
+import { customersData } from './data.js'
 
-const app = new Hono()
+const routes = new Hono()
 
-// Deep Nested Route Handler: /Customers/:custId/Contact/:contactId/edit
-app.get('/:custId/Contact/:contactId/edit', (c) => {
-  const custId = c.req.param('custId')       // e.g. '123-Aramco'
-  const contactId = c.req.param('contactId') // e.g. '356-Jenssen'
-
-  const customerName = custId.split('-')[1] || custId
-  const contactName = contactId.split('-')[1] || contactId
-
-  // Plakkerige / Gelaagde Metadata Structuur voor deze specifieke diepe route
+// Root Sub-App Overzicht (/Customers)
+routes.get('/', (c) => {
   const meta = {
-    currentPath: c.req.path,
+    currentPath: '/Customers',
+    breadcrumbs: [
+      { label: 'Customers', path: '/Customers' }
+    ],
+    subAside: {
+      title: 'Klantbeheer',
+      items: [
+        { label: 'Alle Klanten', path: '/Customers', active: true },
+        { label: 'Nieuwe Klant', path: '/Customers/new' }
+      ]
+    },
+    contextActions: []
+  }
+
+  const customers = customersData.list
+  const content = customerViews.list({ meta, customers })
+  return renderSmart(c, content)
+})
+
+// Customer Detail Route: /Customers/:custId
+routes.get('/:custId', (c) => {
+  const custId = c.req.param('custId')
+  const customer = customersData.getById(custId)
+  const customerName = customer ? customer.name : custId.split('-')[1] || custId
+
+  const meta = {
+    currentPath: `/Customers/${custId}`,
+    breadcrumbs: [
+      { label: 'Customers', path: '/Customers' },
+      { label: customerName, path: `/Customers/${custId}` }
+    ],
+    subAside: {
+      title: `${customerName} Menu`,
+      items: [
+        { label: 'Algemeen Overzicht', path: `/Customers/${custId}`, active: true },
+        { label: 'Contacten', path: `/Customers/${custId}/Contact` },
+        { label: 'Adressen', path: `/Customers/${custId}/Address` },
+        { label: 'Notities', path: `/Customers/${custId}/Notes` }
+      ]
+    },
+    contextActions: [
+      { label: 'Bewerken', path: `/Customers/${custId}/edit`, class: 'btn-primary' },
+      { label: 'Verwijderen', path: `/Customers/${custId}/delete`, class: 'btn-danger' }
+    ]
+  }
+
+  const content = customerViews.detail({ meta, customer, custId })
+  return renderSmart(c, content)
+})
+
+// Customer Contacts List: /Customers/:custId/Contact
+routes.get('/:custId/Contact', (c) => {
+  const custId = c.req.param('custId')
+  const customer = customersData.getById(custId)
+  const customerName = customer ? customer.name : custId.split('-')[1] || custId
+  const contacts = customersData.getContactsByCustomer(custId)
+
+  const meta = {
+    currentPath: `/Customers/${custId}/Contact`,
+    breadcrumbs: [
+      { label: 'Customers', path: '/Customers' },
+      { label: customerName, path: `/Customers/${custId}` },
+      { label: 'Contacten', path: `/Customers/${custId}/Contact` }
+    ],
+    subAside: {
+      title: `${customerName} Menu`,
+      items: [
+        { label: 'Algemeen Overzicht', path: `/Customers/${custId}` },
+        { label: 'Contacten', path: `/Customers/${custId}/Contact`, active: true },
+        { label: 'Adressen', path: `/Customers/${custId}/Address` },
+        { label: 'Notities', path: `/Customers/${custId}/Notes` }
+      ]
+    },
+    contextActions: [
+      { label: 'Nieuwe Contact', path: `/Customers/${custId}/Contact/new`, class: 'btn-primary' }
+    ]
+  }
+
+  const content = customerViews.contactsList({ meta, customer, custId, contacts })
+  return renderSmart(c, content)
+})
+
+// Contact Detail: /Customers/:custId/Contact/:contactId
+routes.get('/:custId/Contact/:contactId', (c) => {
+  const custId = c.req.param('custId')
+  const contactId = c.req.param('contactId')
+  const customer = customersData.getById(custId)
+  const customerName = customer ? customer.name : custId.split('-')[1] || custId
+  const contact = customersData.getContactById(custId, contactId)
+  const contactName = contact ? contact.name : contactId.split('-')[1] || contactId
+
+  const meta = {
+    currentPath: `/Customers/${custId}/Contact/${contactId}`,
+    breadcrumbs: [
+      { label: 'Customers', path: '/Customers' },
+      { label: customerName, path: `/Customers/${custId}` },
+      { label: 'Contacten', path: `/Customers/${custId}/Contact` },
+      { label: contactName, path: `/Customers/${custId}/Contact/${contactId}` }
+    ],
+    subAside: {
+      title: `${customerName} Menu`,
+      items: [
+        { label: 'Algemeen Overzicht', path: `/Customers/${custId}` },
+        { label: 'Contacten', path: `/Customers/${custId}/Contact`, active: true },
+        { label: 'Adressen', path: `/Customers/${custId}/Address` },
+        { label: 'Notities', path: `/Customers/${custId}/Notes` }
+      ]
+    },
+    contextActions: [
+      { label: 'Bewerken', path: `/Customers/${custId}/Contact/${contactId}/edit`, class: 'btn-primary' },
+      { label: 'Verwijderen', path: `/Customers/${custId}/Contact/${contactId}/delete`, class: 'btn-danger' }
+    ]
+  }
+
+  const content = customerViews.contactDetail({ meta, customer, custId, contact, contactId })
+  return renderSmart(c, content)
+})
+
+// Contact Edit: /Customers/:custId/Contact/:contactId/edit
+routes.get('/:custId/Contact/:contactId/edit', (c) => {
+  const custId = c.req.param('custId')
+  const contactId = c.req.param('contactId')
+  const customer = customersData.getById(custId)
+  const customerName = customer ? customer.name : custId.split('-')[1] || custId
+  const contact = customersData.getContactById(custId, contactId)
+  const contactName = contact ? contact.name : contactId.split('-')[1] || contactId
+
+  const meta = {
+    currentPath: `/Customers/${custId}/Contact/${contactId}/edit`,
     breadcrumbs: [
       { label: 'Customers', path: '/Customers' },
       { label: customerName, path: `/Customers/${custId}` },
@@ -36,78 +158,72 @@ app.get('/:custId/Contact/:contactId/edit', (c) => {
     ]
   }
 
-  // De HTML Partial die Alpine adviseert de $store.navigation live bij te werken
-  const content = html`
-    <div x-init='
-      $store.navigation.setState(${JSON.stringify(meta)})
-    ' style="display:none;"></div>
-
-    <div class="content-header">
-      <h2>Contact Bewerken: ${contactName}</h2>
-      
-      <!-- Contextual Action Buttons in Content Header -->
-      <div class="actions" x-data>
-        <template x-for="action in $store.navigation.contextActions" :key="action.label">
-          <button :class="'btn ' + action.class" 
-                  :hx-get="action.path" 
-                  hx-target="#main-content"
-                  x-text="action.label"></button>
-        </template>
-      </div>
-    </div>
-
-    <form id="edit-contact-form" style="display: flex; flex-direction: column; gap: 1rem; max-width: 400px;">
-      <div>
-        <label style="display:block; margin-bottom: 0.5rem;">Klantnummer / Organisatie:</label>
-        <input type="text" value="${customerName} (${custId})" disabled style="width: 100%; padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px;" />
-      </div>
-      <div>
-        <label style="display:block; margin-bottom: 0.5rem;">Contactpersoon Naam:</label>
-        <input type="text" name="contactName" value="${contactName}" style="width: 100%; padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px;" />
-      </div>
-    </form>
-  `
-
+  const content = customerViews.contactEdit({ meta, customer, custId, contact, contactId })
   return renderSmart(c, content)
 })
 
-// Root Sub-App Overzicht (/Customers)
-app.get('/', (c) => {
+// Customer Addresses: /Customers/:custId/Address
+routes.get('/:custId/Address', (c) => {
+  const custId = c.req.param('custId')
+  const customer = customersData.getById(custId)
+  const customerName = customer ? customer.name : custId.split('-')[1] || custId
+  const addresses = customersData.getAddressesByCustomer(custId)
+
   const meta = {
-    currentPath: '/Customers',
+    currentPath: `/Customers/${custId}/Address`,
     breadcrumbs: [
-      { label: 'Customers', path: '/Customers' }
+      { label: 'Customers', path: '/Customers' },
+      { label: customerName, path: `/Customers/${custId}` },
+      { label: 'Adressen', path: `/Customers/${custId}/Address` }
     ],
     subAside: {
-      title: 'Klantbeheer',
+      title: `${customerName} Menu`,
       items: [
-        { label: 'Alle Klanten', path: '/Customers', active: true },
-        { label: 'Nieuwe Klant', path: '/Customers/new' }
+        { label: 'Algemeen Overzicht', path: `/Customers/${custId}` },
+        { label: 'Contacten', path: `/Customers/${custId}/Contact` },
+        { label: 'Adressen', path: `/Customers/${custId}/Address`, active: true },
+        { label: 'Notities', path: `/Customers/${custId}/Notes` }
       ]
     },
-    contextActions: []
+    contextActions: [
+      { label: 'Nieuw Adres', path: `/Customers/${custId}/Address/new`, class: 'btn-primary' }
+    ]
   }
 
-  const content = html`
-    <div x-init='
-      $store.navigation.setState(${JSON.stringify(meta)})
-    ' style="display:none;"></div>
-
-    <h2>Klanten Overzicht</h2>
-    <p>Selecteer een klant om het gelaagde menu en de details te zien:</p>
-    <ul>
-      <li>
-        <button class="btn btn-secondary" 
-                hx-get="/Customers/123-Aramco/Contact/356-Jenssen/edit" 
-                hx-target="#main-content" 
-                hx-push-url="/Customers/123-Aramco/Contact/356-Jenssen/edit">
-          Aramco - Contact Jenssen Bewerken
-        </button>
-      </li>
-    </ul>
-  `
-
+  const content = customerViews.addressesList({ meta, customer, custId, addresses })
   return renderSmart(c, content)
 })
 
-export default app
+// Customer Notes: /Customers/:custId/Notes
+routes.get('/:custId/Notes', (c) => {
+  const custId = c.req.param('custId')
+  const customer = customersData.getById(custId)
+  const customerName = customer ? customer.name : custId.split('-')[1] || custId
+  const notes = customersData.getNotesByCustomer(custId)
+
+  const meta = {
+    currentPath: `/Customers/${custId}/Notes`,
+    breadcrumbs: [
+      { label: 'Customers', path: '/Customers' },
+      { label: customerName, path: `/Customers/${custId}` },
+      { label: 'Notities', path: `/Customers/${custId}/Notes` }
+    ],
+    subAside: {
+      title: `${customerName} Menu`,
+      items: [
+        { label: 'Algemeen Overzicht', path: `/Customers/${custId}` },
+        { label: 'Contacten', path: `/Customers/${custId}/Contact` },
+        { label: 'Adressen', path: `/Customers/${custId}/Address` },
+        { label: 'Notities', path: `/Customers/${custId}/Notes`, active: true }
+      ]
+    },
+    contextActions: [
+      { label: 'Nieuwe Notitie', path: `/Customers/${custId}/Notes/new`, class: 'btn-primary' }
+    ]
+  }
+
+  const content = customerViews.notesList({ meta, customer, custId, notes })
+  return renderSmart(c, content)
+})
+
+export default routes

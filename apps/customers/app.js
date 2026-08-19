@@ -1,27 +1,13 @@
 import { Hono } from 'hono'
 import { html } from 'hono/html'
-import { renderLayout } from '../../shared/layout.js'
-import portalRoutes from './routes.js'
-import customersApp from '../customers/app.js'
+import customerRoutes from './routes.js'
 
 const app = new Hono()
 
-// Global Render Helper (Full Page vs HTMX Partial Switch)
-globalThis.renderSmart = function(c, viewHtml) {
-  const isHx = c.req.header('HX-Request-Type') == 'partial'
-  if (isHx) {
-    return c.html(viewHtml)
-  }
-  return c.html(renderLayout({ content: viewHtml }))
-}
+// Mount customer routes
+app.route('/', customerRoutes)
 
-// Mount portal routes
-app.route('/', portalRoutes)
-
-// Mount Sub-Apps
-app.route('/Customers', customersApp)
-
-// 404 Handler - Unmatched routes
+// 404 Handler - Unmatched customer routes
 app.notFound((c) => {
   const meta = {
     currentPath: c.req.path,
@@ -33,13 +19,13 @@ app.notFound((c) => {
     <div x-init='
       $store.navigation.setState(${JSON.stringify(meta)})
     ' style="display:none;"></div>
-    <h2>404 - Page Not Found</h2>
-    <p>The page "${c.req.path}" does not exist.</p>
+    <h2>404 - Customer Page Not Found</h2>
+    <p>The customer page "${c.req.path}" does not exist.</p>
   `
   return renderSmart(c, content)
 })
 
-// Global Error Handler - All other errors
+// Global Error Handler - All other errors in customers app
 app.onError((err, c) => {
   const meta = {
     currentPath: c.req.path,

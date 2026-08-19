@@ -1,9 +1,10 @@
 {
-  "name": "has-portal-metadata-poc",
+  "name": "HAX-portal",
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "node apps/portal/app.js"
+    "dev": "node apps/portal/server.js",
+    "dev:cust": "node apps/customers/server.js"
   },
   "dependencies": {
     "@hono/node-server": "latest",

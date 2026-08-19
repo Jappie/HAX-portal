@@ -8,8 +8,8 @@ export function renderLayout({ title = 'Enterprise Portal', content = '' }) {
     <meta charset="UTF-8">
     <title>${title}</title>
     <!-- HTMX v4 & Alpine.js -->
-    <script src="https://unpkg.com/htmx.org@2.0.0"></script>
-    <script src="https://unpkg.com/@htmx-ext/hx-alpine-compat@latest/hx-alpine-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/htmx.org@4.0.0-beta6/dist/htmx.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/htmx.org@4.0.0-beta6/dist/ext/hx-alpine-compat.js"></script>
     <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
     
     <!-- EÉN Centrale Navigation Store in Alpine -->
