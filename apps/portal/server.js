@@ -4,6 +4,6 @@ import app from './app.js'
 const port = 3000
 
 console.log(`Server gestart op http://localhost:${port}`)
-console.log(`Directe Bookmark Test URL: http://localhost:${port}/Customers/123-Aramco/Contact/356-Jenssen/edit`)
+console.log(`Directe Bookmark Test URL: http://localhost:${port}/Customers/123-Aramco/Contact/356-Jenssen`)
 
 serve({ fetch: app.fetch, port })

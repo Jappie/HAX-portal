@@ -32,6 +32,14 @@ export function renderLayout({ title = 'Enterprise Portal', content = '' }) {
             if (meta.breadcrumbs) this.breadcrumbs = meta.breadcrumbs;
             if (meta.subAside) this.subAside = meta.subAside;
             if (meta.contextActions) this.contextActions = meta.contextActions;
+            
+            // Re-attach HTMX to dynamically updated elements (breadcrumbs, subAside, mainAside)
+            // Alpine re-renders these after store update, but HTMX doesn't auto-process new elements
+            setTimeout(() => {
+              htmx.process(document.querySelector('.breadcrumbs'));
+              htmx.process(document.querySelector('.sub-aside'));
+              htmx.process(document.querySelector('.main-aside'));
+            }, 0);
           }
         });
       });
@@ -87,7 +95,7 @@ export function renderLayout({ title = 'Enterprise Portal', content = '' }) {
           <button :hx-get="item.path" 
                   hx-target="#main-content" 
                   hx-swap="innerHTML" 
-                  :hx-push-url="item.path"
+                  :hx-push-url="item.path.includes('/edit') ? 'false' : item.path"
                   x-text="item.label"></button>
         </span>
       </template>
@@ -100,7 +108,7 @@ export function renderLayout({ title = 'Enterprise Portal', content = '' }) {
           <button :hx-get="app.path" 
                   hx-target="#main-content" 
                   hx-swap="innerHTML" 
-                  :hx-push-url="app.path"
+                  :hx-push-url="app.path.includes('/edit') ? 'false' : app.path"
                   :class="{ 'active': $store.navigation.currentPath.startsWith(app.path) }"
                   x-text="app.label"></button>
         </template>
@@ -115,7 +123,7 @@ export function renderLayout({ title = 'Enterprise Portal', content = '' }) {
               <button :hx-get="item.path" 
                       hx-target="#main-content" 
                       hx-swap="innerHTML" 
-                      :hx-push-url="item.path"
+                      :hx-push-url="item.path.includes('/edit') ? 'false' : item.path"
                       :class="{ 'active': item.active }"
                       x-text="item.label"></button>
             </li>

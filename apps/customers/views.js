@@ -25,7 +25,7 @@ export const customerViews = {
           <button class="btn btn-secondary" 
                   hx-get="/Customers/123-Aramco/Contact/356-Jenssen/edit" 
                   hx-target="#main-content" 
-                  hx-push-url="/Customers/123-Aramco/Contact/356-Jenssen/edit">
+                  hx-push-url="false">
             Aramco - Contact Jenssen Bewerken (Direct Test)
           </button>
         </li>
@@ -57,6 +57,7 @@ export const customerViews = {
             <button :class="'btn ' + action.class" 
                     :hx-get="action.path" 
                     hx-target="#main-content"
+                    :hx-push-url="action.path.includes('/edit') ? 'false' : action.path"
                     x-text="action.label"></button>
           </template>
         </div>
@@ -117,6 +118,7 @@ export const customerViews = {
             <button :class="'btn ' + action.class" 
                     :hx-get="action.path" 
                     hx-target="#main-content"
+                    :hx-push-url="action.path.includes('/edit') ? 'false' : action.path"
                     x-text="action.label"></button>
           </template>
         </div>
@@ -140,7 +142,7 @@ export const customerViews = {
                   <button class="btn btn-primary" 
                           hx-get="/Customers/${custId}/Contact/${contact.id}/edit" 
                           hx-target="#main-content" 
-                          hx-push-url="/Customers/${custId}/Contact/${contact.id}/edit">
+                          hx-push-url="false">
                     Bewerken
                   </button>
                 </div>
@@ -179,6 +181,7 @@ export const customerViews = {
             <button :class="'btn ' + action.class" 
                     :hx-get="action.path" 
                     hx-target="#main-content"
+                    :hx-push-url="action.path.includes('/edit') ? 'false' : action.path"
                     x-text="action.label"></button>
           </template>
         </div>
@@ -222,6 +225,7 @@ export const customerViews = {
             <button :class="'btn ' + action.class" 
                     :hx-get="action.path" 
                     hx-target="#main-content"
+                    :hx-push-url="action.path.includes('/edit') ? 'false' : action.path"
                     x-text="action.label"></button>
           </template>
         </div>
@@ -262,6 +266,7 @@ export const customerViews = {
             <button :class="'btn ' + action.class" 
                     :hx-get="action.path" 
                     hx-target="#main-content"
+                    :hx-push-url="action.path.includes('/edit') ? 'false' : action.path"
                     x-text="action.label"></button>
           </template>
         </div>
@@ -300,6 +305,7 @@ export const customerViews = {
             <button :class="'btn ' + action.class" 
                     :hx-get="action.path" 
                     hx-target="#main-content"
+                    :hx-push-url="action.path.includes('/edit') ? 'false' : action.path"
                     x-text="action.label"></button>
           </template>
         </div>

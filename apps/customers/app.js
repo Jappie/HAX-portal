@@ -1,5 +1,6 @@
 import { Hono } from 'hono'
 import { html } from 'hono/html'
+import '../../shared/hax.js' // Import shared utilities (renderSmart)
 import customerRoutes from './routes.js'
 
 const app = new Hono()

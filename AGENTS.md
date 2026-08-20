@@ -28,3 +28,8 @@
 - Navigation metadata (breadcrumbs, subAside, contextActions) is JSON-stringified into `x-init`
 - No separate API endpoints; state is embedded in HTML responses
 - Both portal and customers apps have 404 and error handlers to reset navigation state
+
+## HTMX + Alpine Gotcha
+- Alpine dynamically re-renders breadcrumbs/subAside/mainAside when store updates
+- HTMX does NOT auto-process new elements added by Alpine outside the swap target
+- **Fix**: Call `htmx.process()` on these containers in `setState` after store update

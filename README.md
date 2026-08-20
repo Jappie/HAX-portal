@@ -45,8 +45,10 @@ Single Alpine.js store (`$store.navigation`) manages:
 ### Layered App Structure
 Each sub-app (e.g., Customers) can set its own navigation context that updates the global store, enabling deep nested routes like:
 ```
-/Customers/123-Aramco/Contact/356-Jenssen/edit
+/Customers/123-Aramco/Contact/356-Jenssen
 ```
+
+**Note:** Edit routes (e.g., `/edit`) use `hx-push-url="false"` to avoid cluttering browser history with intermediate edit states.
 
 ### Separated Concerns
 Each app follows a clean separation:
@@ -69,4 +71,4 @@ npm run dev:cust   # Start customers app standalone on port 3001
 
 Open: http://localhost:3000
 
-Test deep link: http://localhost:3000/Customers/123-Aramco/Contact/356-Jenssen/edit
+Test deep link: http://localhost:3000/Customers/123-Aramco/Contact/356-Jenssen

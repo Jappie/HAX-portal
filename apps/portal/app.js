@@ -1,19 +1,10 @@
 import { Hono } from 'hono'
 import { html } from 'hono/html'
-import { renderLayout } from '../../shared/layout.js'
+import '../../shared/hax.js' // Import shared utilities (renderSmart)
 import portalRoutes from './routes.js'
 import customersApp from '../customers/app.js'
 
 const app = new Hono()
-
-// Global Render Helper (Full Page vs HTMX Partial Switch)
-globalThis.renderSmart = function(c, viewHtml) {
-  const isHx = c.req.header('HX-Request-Type') == 'partial'
-  if (isHx) {
-    return c.html(viewHtml)
-  }
-  return c.html(renderLayout({ content: viewHtml }))
-}
 
 // Mount portal routes
 app.route('/', portalRoutes)
