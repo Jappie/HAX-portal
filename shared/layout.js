@@ -17,11 +17,7 @@ export function renderLayout({ title = 'Enterprise Portal', content = '' }) {
       document.addEventListener('alpine:init', () => {
         Alpine.store('navigation', {
           currentPath: '',
-          mainApps: [
-            { id: 'customers', label: 'Customers', path: '/Customers' },
-            { id: 'suppliers', label: 'Suppliers', path: '/Suppliers' },
-            { id: 'hr', label: 'HR', path: '/HR' }
-          ],
+          mainApps: [],
           subAside: { title: '', items: [] },
           breadcrumbs: [],
           contextActions: [],

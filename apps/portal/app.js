@@ -2,15 +2,26 @@ import { Hono } from 'hono'
 import { html } from 'hono/html'
 import '../../shared/hax.js' // Import shared utilities (renderSmart)
 import portalRoutes from './routes.js'
-import customersApp from '../customers/app.js'
+import { discoverApps } from './appDiscovery.js'
 
 const app = new Hono()
 
+// Discover and mount apps dynamically
+const appsDir = new URL('../', import.meta.url).pathname
+const discoveredApps = await discoverApps(appsDir)
+
+for (const appInfo of discoveredApps) {
+  try {
+    const appModule = await import(appInfo.modulePath)
+    app.route(appInfo.mountPath, appModule.default)
+    console.log(`Mounted app: ${appInfo.name} at ${appInfo.mountPath}`)
+  } catch (err) {
+    console.error(`Failed to load app ${appInfo.name}:`, err)
+  }
+}
+
 // Mount portal routes
 app.route('/', portalRoutes)
-
-// Mount Sub-Apps
-app.route('/Customers', customersApp)
 
 // 404 Handler - Unmatched routes
 app.notFound((c) => {

@@ -7,14 +7,17 @@
 
 ## Architecture
 - `apps/portal/server.js` - Server entry point (port 3000)
-- `apps/portal/app.js` - Hono app initialization, mounts sub-apps and routes
+- `apps/portal/app.js` - Hono app initialization, discovers and mounts sub-apps
+- `apps/portal/appDiscovery.js` - Discovers apps with portal.json files
 - `apps/portal/routes.js` - Portal route definitions
 - `apps/portal/views.js` - Portal HTML view templates
+- `apps/customers/portal.json` - App metadata for discovery
 - `apps/customers/server.js` - Customers app standalone server (port 3001)
 - `apps/customers/app.js` - Customers Hono app initialization
 - `apps/customers/routes.js` - Customer route definitions
 - `apps/customers/views.js` - Customer HTML view templates
 - `apps/customers/data.js` - Customer data models
+- `shared/hax.js` - Shared utilities (renderSmart)
 - `shared/layout.js` - Central layout with Alpine store for navigation state
 
 ## Key Patterns
