@@ -3,11 +3,24 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "node apps/portal/server.js",
-    "dev:cust": "node apps/customers/server.js"
+    "dev": "tsx apps/portal/server.tsx",
+    "dev:cust": "tsx apps/customers/server.tsx",
+    "seed": "tsx db/seed.ts",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@hono/node-server": "latest",
-    "hono": "latest"
+    "better-auth": "^1.7.2",
+    "drizzle-orm": "^0.45.2",
+    "drizzle-zod": "^0.8.3",
+    "hono": "latest",
+    "zod": "^4.5.4"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^22.20.1",
+    "@types/react": "^18.3.31",
+    "tsx": "^4.23.13",
+    "typescript": "^5.9.3"
   }
 }
