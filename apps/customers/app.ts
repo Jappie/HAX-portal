@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
-import { html } from 'hono/html';
-import { renderSmart } from '../../shared/hax.tsx';
-import customerRoutes from './routes.tsx';
+import { html, raw } from 'hono/html';
+import { renderSmart } from '../../shared/hax.ts';
+import customerRoutes from './routes.ts';
 import type { Context } from 'hono';
 
 const app = new Hono();
@@ -17,10 +17,12 @@ app.notFound((c: Context) => {
     subAside: { title: '', items: [] },
     contextActions: []
   };
-  const content = html`
-    <div x-init='
-      $store.navigation.setState(${JSON.stringify(meta)})
-    ' style="display:none;"></div>
+  const stateJson = JSON.stringify(meta);
+  const navState = raw(`<div 
+    x-init="$store.navigation.setState(JSON.parse($el.dataset.state))"
+    data-state='${stateJson}'
+    style="display: none;"></div>`, []);
+  const content = html`${navState}
     <h2>404 - Customer Page Not Found</h2>
     <p>The customer page "${c.req.path}" does not exist.</p>
   `;
@@ -35,10 +37,12 @@ app.onError((err: Error, c: Context) => {
     subAside: { title: '', items: [] },
     contextActions: []
   };
-  const content = html`
-    <div x-init='
-      $store.navigation.setState(${JSON.stringify(meta)})
-    ' style="display:none;"></div>
+  const stateJson = JSON.stringify(meta);
+  const navState = raw(`<div 
+    x-init="$store.navigation.setState(JSON.parse($el.dataset.state))"
+    data-state='${stateJson}'
+    style="display: none;"></div>`, []);
+  const content = html`${navState}
     <h2>Error</h2>
     <p>${err.message}</p>
   `;

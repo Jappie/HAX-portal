@@ -3,15 +3,15 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "tsx apps/portal/server.tsx",
-    "dev:cust": "tsx apps/customers/server.tsx",
+    "dev": "tsx apps/portal/server.ts",
+    "dev:cust": "tsx apps/customers/server.ts",
     "seed": "tsx db/seed.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@hono/node-server": "latest",
     "better-auth": "^1.7.2",
-    "drizzle-orm": "^0.45.2",
+    "drizzle-orm": "^1.0.0-rc.4",
     "drizzle-zod": "^0.8.3",
     "hono": "latest",
     "zod": "^4.5.4"

@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { renderSmart } from '../../shared/hax.tsx';
+import { renderSmart } from '../../shared/hax.ts';
 import {
   CustomersList,
   CustomerDetail,
@@ -8,7 +8,7 @@ import {
   ContactEdit,
   AddressesList,
   NotesList
-} from './views.tsx';
+} from './views.ts';
 import { customersData } from './data.ts';
 import type { Context } from 'hono';
 import type { Customer, Contact } from './data.ts';
@@ -44,7 +44,7 @@ routes.get('/', async (c: Context) => {
     contextActions: []
   };
 
-  const content = <CustomersList meta={meta} customers={customers} />;
+  const content = CustomersList({ meta, customers });
   return renderSmart(c, content);
 });
 
@@ -76,7 +76,7 @@ routes.get('/:custId', async (c: Context) => {
     ]
   };
 
-  const content = <CustomerDetail meta={meta} customer={customer} custId={custId} />;
+  const content = CustomerDetail({ meta, customer, custId });
   return renderSmart(c, content);
 });
 
@@ -109,7 +109,7 @@ routes.get('/:custId/Contact', async (c: Context) => {
     ]
   };
 
-  const content = <ContactsList meta={meta} customer={customer} custId={custId} contacts={contacts} />;
+  const content = ContactsList({ meta, customer, custId, contacts });
   return renderSmart(c, content);
 });
 
@@ -146,7 +146,7 @@ routes.get('/:custId/Contact/:contactId', async (c: Context) => {
     ]
   };
 
-  const content = <ContactDetail meta={meta} customer={customer} custId={custId} contact={contact} contactId={contactId} />;
+  const content = ContactDetail({ meta, customer, custId, contact, contactId });
   return renderSmart(c, content);
 });
 
@@ -184,7 +184,7 @@ routes.get('/:custId/Contact/:contactId/edit', async (c: Context) => {
     ]
   };
 
-  const content = <ContactEdit meta={meta} customer={customer} custId={custId} contact={contact} contactId={contactId} />;
+  const content = ContactEdit({ meta, customer, custId, contact, contactId });
   return renderSmart(c, content);
 });
 
@@ -217,7 +217,7 @@ routes.get('/:custId/Address', async (c: Context) => {
     ]
   };
 
-  const content = <AddressesList meta={meta} customer={customer} custId={custId} addresses={addresses} />;
+  const content = AddressesList({ meta, customer, custId, addresses });
   return renderSmart(c, content);
 });
 
@@ -250,7 +250,7 @@ routes.get('/:custId/Notes', async (c: Context) => {
     ]
   };
 
-  const content = <NotesList meta={meta} customer={customer} custId={custId} notes={notes} />;
+  const content = NotesList({ meta, customer, custId, notes });
   return renderSmart(c, content);
 });
 

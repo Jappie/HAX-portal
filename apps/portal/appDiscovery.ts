@@ -1,4 +1,5 @@
-import { sqlite } from '../../db/database.ts';
+import { db } from '../../db/database.ts';
+import { portalApps } from '../../db/schema.ts';
 
 interface AppInfo {
   name: string;
@@ -13,18 +14,17 @@ export async function discoverApps(): Promise<AppInfo[]> {
   const apps: AppInfo[] = [];
 
   try {
-    // Get apps from database using raw SQL
-    const stmt = sqlite.prepare('SELECT * FROM portal_apps');
-    const rows = stmt.all() as any[];
+    // Get apps from database using Drizzle ORM with node-sqlite driver
+    const rows = db.select().from(portalApps).all();
     
     for (const row of rows) {
       apps.push({
         name: row.name,
         fullname: row.fullname,
         category: row.category || 'default',
-        basePath: row.mount_path,
-        mountPath: row.mount_path,
-        modulePath: row.module_path
+        basePath: row.mountPath,
+        mountPath: row.mountPath,
+        modulePath: row.modulePath
       });
     }
   } catch (err) {

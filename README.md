@@ -1,13 +1,13 @@
 # HAX Portal - Multi-App Navigation POC
 
-A proof-of-concept enterprise portal demonstrating layered application navigation with **HTMX v4, Alpine.js, and TypeScript + Hono JSX**.
+A proof-of-concept enterprise portal demonstrating layered application navigation with **HTMX v4, Alpine.js, and TypeScript + Hono JSX + node:sqlite**.
 
 ## Architecture
 
 - **Backend**: Hono (lightweight web framework) with TypeScript
 - **Frontend**: HTMX v4 for dynamic HTML, Alpine.js for reactive state
 - **Database**: SQLite via Node.js 22.x built-in `node:sqlite` module
-- **ORM**: Drizzle ORM for type-safe database operations
+- **ORM**: Drizzle ORM (for schema definitions only - raw SQL for queries)
 - **Pattern**: Server-rendered HTML with client-side interactivity via Hono's JSX
 
 ## Project Structure
@@ -17,22 +17,26 @@ HAX-portal/
 ├── apps/
 │   ├── portal/
 │   │   ├── server.tsx    # Main server entry (port 3000)
-│   │   ├── app.tsx       # Hono app initialization
-│   │   ├── routes.tsx    # Portal routes
-│   │   └── views.tsx     # Portal TSX view components
+│   │   ├── app.tsx       # Hono app initialization, app discovery
+│   │   ├── routes.tsx    # Portal route definitions
+│   │   └── views.tsx     # Portal view components (hono/html)
 │   └── customers/
 │       ├── server.tsx    # Standalone server (port 3001)
 │       ├── app.tsx       # Customers Hono app
-│       ├── routes.tsx    # Customer routes
-│       ├── views.tsx     # Customer TSX view components
-│       └── data.ts       # Data access layer (Drizzle ORM)
+│       ├── routes.tsx    # Customer route definitions
+│       ├── views.tsx     # Customer view components (hono/html)
+│       └── data.ts       # Data access layer (raw SQL)
 ├── db/
 │   ├── database.ts      # Database connection (node:sqlite)
 │   ├── schema.ts        # Drizzle ORM schema definitions
 │   └── seed.ts          # Database seeding script
 ├── shared/
 │   ├── hax.tsx          # Shared utilities (renderSmart)
-│   └── layout.tsx       # Central layout with Alpine store
+│   ├── layout.tsx       # Central layout with Alpine store
+│   └── components/      # Reusable UI components
+│       ├── Breadcrumbs.tsx
+│       ├── MainAside.tsx
+│       └── SubAside.tsx
 ├── package.json
 ├── tsconfig.json
 └── README.md
@@ -43,7 +47,7 @@ HAX-portal/
 ### Central Navigation Store
 Single Alpine.js store (`$store.navigation`) manages:
 - Breadcrumbs
-- Main app navigation (Customers, Suppliers, HR)
+- Main app navigation (Customers, etc.)
 - Contextual sub-menus
 - Action buttons
 
@@ -53,23 +57,18 @@ Single Alpine.js store (`$store.navigation`) manages:
 - **Full layout** for initial page loads
 
 ### Layered App Structure
-Each sub-app (e.g., Customers) can set its own navigation context that updates the global store, enabling deep nested routes like:
+Each sub-app can set its own navigation context that updates the global store, enabling deep nested routes like:
 ```
 /Customers/123-Aramco/Contact/356-Jenssen
 ```
 
 **Note**: Edit routes (e.g., `/edit`) use `hx-push-url="false"` to avoid cluttering browser history with intermediate edit states.
 
-### TSX Templates with Hono JSX
-- **Type-safe components**: All views are now TSX components with typed props
-- **Alpine.js integration**: Alpine.js directives work directly in JSX
-- **Better IDE support**: Syntax highlighting, autocompletion, type checking
-
-### SQLite Database with Drizzle ORM
-- **Node.js 22.x built-in**: Uses `node:sqlite` (no installation needed)
-- **Works on Termux**: Confirmed working on Android/Termux
-- **Type-safe queries**: Drizzle ORM provides full TypeScript support
-- **Easy seeding**: Run `pnpm run seed` to create tables and insert sample data
+### Component-Based with hono/html
+- **All views use `hono/html`** for consistent Alpine template rendering
+- **Nested components** return `HtmlEscapedString` which can be embedded in other templates
+- **No escaping issues** - Alpine directives and expressions are preserved
+- **Type-safe props** - Components can still have typed props
 
 ## Quick Start
 
@@ -89,7 +88,7 @@ pnpm run dev:cust
 
 Open: http://localhost:3000
 
-Test deep link: http://localhost:3000/Customers/123/Contact/356
+Test deep link: http://localhost:3000/Customers/123-Aramco/Contact/356-Jenssen
 
 ## TypeScript Development
 
@@ -113,41 +112,137 @@ The SQLite database (`db/hax-portal.db`) contains:
 - **notes**: Customer notes (id, customer_id, content, date, author)
 - **portal_apps**: Registered applications for the portal
 
-## Technical Highlights
+## Technical Insights
 
-### 1. Node.js Built-in SQLite
-Node.js 22.x includes `node:sqlite` which is API-compatible with `better-sqlite3`, making it work seamlessly with Drizzle ORM without any native compilation.
+### 1. Node.js Built-in SQLite (`node:sqlite`)
+Node.js 22.x includes `node:sqlite` which is **mostly** API-compatible with `better-sqlite3`.
 
-### 2. Hono JSX with Alpine.js
-Hono's JSX runtime preserves Alpine.js directives as HTML attributes, allowing you to write:
-```tsx
-<div x-data>
-  <template x-for="item in items" x-key="item.id">
-    <button x-text="item.label"></button>
-  </template>
-</div>
+**Key Differences:**
+- Statement objects don't have a `raw()` method (required by Drizzle ORM's better-sqlite3 adapter)
+- Returns rows as null-prototype objects (`Object.create(null)`)
+
+**Workaround:** Use raw SQL queries instead of Drizzle ORM's query builder:
+```typescript
+import { DatabaseSync } from 'node:sqlite';
+const db = new DatabaseSync('db/hax-portal.db');
+const stmt = db.prepare('SELECT * FROM customers');
+const rows = stmt.all() as any[];
 ```
 
-### 3. Smart Rendering Pattern
-The `renderSmart` utility automatically detects HTMX partial requests and returns either:
-- Raw HTML for HTMX swaps
-- Full layout with navigation for initial page loads
+**Benefits:**
+- No installation needed - Available in Node.js 22.x core
+- Works on Termux/Android without native compilation
+- Lightweight and fast
 
-### 4. Central Navigation State
-Alpine.js store manages navigation state across the entire application, updated via `x-init` from each route.
+### 2. Hono JSX with Alpine.js - The Escaping Problem
+
+**The Issue:** Hono's JSX runtime escapes special characters (`>`, `<`, `{`, `}`) in children and attribute values. This breaks Alpine templates:
+
+```tsx
+// This gets escaped to: x-if="index &gt; 0"
+<template x-if="index > 0">
+```
+
+**The Solution:** Use `hono/html` tagged templates for Alpine template sections:
+
+```tsx
+import { html } from 'hono/html';
+
+function Breadcrumbs() {
+  return html`<nav x-data>
+    <template x-for="(item, index) in items" x-key="item.path">
+      <template x-if="index > 0"><span>/</span></template>
+      <button x-text="item.label"></button>
+    </template>
+  </nav>`;
+}
+```
+
+**Why this works:** `hono/html` tagged templates do NOT escape their content, preserving Alpine directives and JavaScript expressions.
+
+### 3. HTMX Attributes with Alpine Variables
+
+**Problem:** HTMX tries to evaluate attribute values on the server. When you use:
+```html
+<button hx-push-url="item.path.includes('/edit') ? 'false' : item.path">
+```
+HTMX tries to evaluate `item.path.includes('/edit')` on the server, where `item` is undefined.
+
+**Solution:** Use simple path references:
+```html
+<button hx-push-url="item.path">
+```
+Let the browser handle the URL pushing based on the path. Alpine will substitute `item.path` with the actual value.
+
+### 4. Component Architecture
+
+All UI components use `hono/html` and return `HtmlEscapedString`:
+
+```tsx
+// shared/components/Breadcrumbs.tsx
+export function Breadcrumbs() {
+  return html`<nav x-data>...</nav>`;
+}
+
+// shared/layout.tsx
+import { Breadcrumbs } from './components/Breadcrumbs.tsx';
+
+export function Layout({ children }) {
+  const breadcrumbsHtml = Breadcrumbs();
+  return html`<html>...${breadcrumbsHtml}...</html>`;
+}
+```
+
+**Benefits:**
+- Consistent approach - all HTML uses `hono/html`
+- No escaping issues ever
+- Nested components work seamlessly
+- Type-safe props still work
+- Cleaner code than mixing TSX and `hono/html`
+
+### 5. Injecting Data into Alpine Store
+
+The `mainApps` array needs to be available in the browser for Alpine to use. We inject it via a script:
+
+```tsx
+const mainApps = (globalThis as any).mainApps || [];
+const mainAppsJson = JSON.stringify(mainApps);
+
+const navStoreScript = `
+  document.addEventListener('alpine:init', () => {
+    Alpine.store('navigation', {
+      mainApps: ${mainAppsJson},
+      ...
+    });
+  });
+`;
+
+return html`<html>
+  <script dangerouslySetInnerHTML={{ __html: navStoreScript }} />
+  ...
+</html>`;
+```
+
+**Note:** We use `dangerouslySetInnerHTML` here because the script contains JSON that would otherwise be escaped by `hono/html`.
 
 ## Separated Concerns
 
 Each app follows a clean separation:
 - **server.tsx**: Entry point with serve()
 - **app.tsx**: Hono app setup and route mounting
-- **routes.tsx**: Route definitions with metadata
-- **views.tsx**: TSX view components
-- **data.ts**: Data access layer (Drizzle ORM)
+- **routes.tsx**: Route definitions with navigation metadata
+- **views.tsx**: View components using `hono/html`
+- **data.ts**: Data access layer (raw SQL with `node:sqlite`)
 
 ## Error Handling
 
 Both portal and customers apps have 404 and global error handlers that reset the navigation state, preventing stale breadcrumbs and sub-menus.
+
+## HTMX + Alpine Integration
+
+- Alpine dynamically re-renders breadcrumbs/subAside/mainAside when store updates
+- HTMX does NOT auto-process new elements added by Alpine outside the swap target
+- **Fix**: Call `htmx.process()` on these containers in `setState` after store update (implemented in layout)
 
 ## License
 

@@ -1,27 +1,50 @@
 // Database module using Node.js built-in sqlite
 // Works on Node.js 22.x+ including Termux
-// node:sqlite is API-compatible with better-sqlite3
+// Using Drizzle ORM with native node:sqlite support (as per Hint.md)
 
+import { drizzle } from 'drizzle-orm/node-sqlite';
 import { DatabaseSync } from 'node:sqlite';
-import { drizzle } from 'drizzle-orm/better-sqlite3';
-import * as schema from './schema.js';
+import * as schema from './schema.ts';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-// Create or open the database
-// DatabaseSync from node:sqlite is API-compatible with better-sqlite3's Database
-const sqlite = new DatabaseSync('db/hax-portal.db') as any;
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
-// Export drizzle instance with schema
-export const db = drizzle(sqlite, { schema });
+// Create or open the database using Node.js built-in sqlite
+const sqlite = new DatabaseSync(join(__dirname, 'hax-portal.db'));
+
+// Initialize Drizzle with node:sqlite client (native support per Hint.md)
+// Schema is passed separately via the config object
+const db = drizzle({ client: sqlite });
+
+// Export drizzle instance
+export { db };
 
 // Export raw database for direct queries
 export { sqlite };
 
-// Graceful shutdown
-process.on('exit', () => {
-  sqlite.close();
-});
+// Export schema types for type safety
+export * from './schema.ts';
 
+// Graceful shutdown - safely close database on exit
+// Note: node:sqlite may throw if database is already closed
+function closeDatabase() {
+  try {
+    if (sqlite && typeof sqlite.close === 'function') {
+      sqlite.close();
+    }
+  } catch (err) {
+    // Ignore errors during shutdown - database might already be closed
+    // console.error('Error closing database:', err.message);
+  }
+}
+
+process.on('exit', closeDatabase);
 process.on('SIGINT', () => {
-  sqlite.close();
+  closeDatabase();
+  process.exit(0);
+});
+process.on('SIGTERM', () => {
+  closeDatabase();
   process.exit(0);
 });

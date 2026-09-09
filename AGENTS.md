@@ -5,96 +5,113 @@
 - **Frontend**: HTMX v4 + Alpine.js
 - **Styling**: Inline CSS in layout template
 - **Database**: SQLite via Node.js built-in `node:sqlite` module (Node.js 22.x+)
-- **ORM**: Drizzle ORM with `drizzle-orm/better-sqlite3` adapter
+- **ORM**: Drizzle ORM (used for schema definitions, but raw SQL for queries due to `node:sqlite` compatibility)
 
 ## Architecture
-- `apps/portal/server.tsx` - Server entry point (port 3000)
-- `apps/portal/app.tsx` - Hono app initialization, discovers and mounts sub-apps
-- `apps/portal/appDiscovery.tsx` - Discovers apps from database (portal_apps table)
-- `apps/portal/routes.tsx` - Portal route definitions
-- `apps/portal/views.tsx` - Portal TSX view components
-- `apps/customers/portal.json` - App metadata for discovery
-- `apps/customers/server.tsx` - Customers app standalone server (port 3001)
-- `apps/customers/app.tsx` - Customers Hono app initialization
-- `apps/customers/routes.tsx` - Customer route definitions
-- `apps/customers/views.tsx` - Customer TSX view components
-- `apps/customers/data.ts` - Customer data access layer (Drizzle ORM)
-- `shared/hax.tsx` - Shared utilities (renderSmart)
-- `shared/layout.tsx` - Central layout with Alpine store for navigation state
+- `apps/portal/server.ts` - Server entry point (port 3000)
+- `apps/portal/app.ts` - Hono app initialization, discovers and mounts sub-apps
+- `apps/portal/appDiscovery.ts` - Discovers apps from database (portal_apps table)
+- `apps/portal/routes.ts` - Portal route definitions
+- `apps/portal/views.ts` - Portal view components using `hono/html`
+- `apps/customers/server.ts` - Customers app standalone server (port 3001)
+- `apps/customers/app.ts` - Customers Hono app initialization
+- `apps/customers/routes.ts` - Customer route definitions
+- `apps/customers/views.ts` - Customer view components using `hono/html`
+- `apps/customers/data.ts` - Customer data access layer (raw SQL with `node:sqlite`)
+- `shared/hax.ts` - Shared utilities (renderSmart)
+- `shared/layout.ts` - Central layout with Alpine store for navigation state
 - `db/database.ts` - Database connection using `node:sqlite`
 - `db/schema.ts` - Drizzle ORM schema definitions
 - `db/seed.ts` - Database seeding script
 
 ## Key Patterns
 - **Smart rendering**: `renderSmart(c, viewHtml)` detects `HX-Request-Type: partial` to return partial vs full page
-- **Central navigation store**: Alpine.js store in layout, updated via `x-init` with JSON from routes
+- **Central navigation store**: Alpine.js store (`$store.navigation`) in layout, updated via `x-init` with JSON from routes
 - **HTMX attributes**: All navigation uses `hx-get`, `hx-target="#main-content"`, `hx-swap="innerHTML"`
-- **Separated concerns**: Each app has server.tsx, app.tsx, routes.tsx, views.tsx, data.ts
-- **TSX Templates**: Views now use Hono's JSX support with Alpine.js directives directly in JSX
+- **Separated concerns**: Each app has server.ts, app.ts, routes.ts, views.ts, data.ts
+- **Component-based**: Views use `hono/html` for clean Alpine template rendering
 
-## Database (SQLite with Drizzle ORM)
+## HTML Concatenation with hono/html
+**Option 3** (Joining an Array of HTML parts) is used throughout the codebase:
+```typescript
+import { html } from 'hono/html';
+const items = [
+  html`<li>Item 1</li>`,
+  html`<li>Item 2</li>`
+];
+// Hono natively unpacks and concatenates arrays inside template literals
+const list = html`<ul>${items}</ul>`;
+```
+
+This approach prevents double-escaping that would occur with `.join('')`.
+
+## Database (SQLite with node:sqlite)
 - **Engine**: Node.js 22.x built-in `node:sqlite` module (no installation needed)
 - **Database file**: `db/hax-portal.db`
 - **Tables**: customers, contacts, addresses, notes, portal_apps
-- **Drizzle adapter**: Uses `drizzle-orm/better-sqlite3` (API-compatible with node:sqlite)
+- **Important**: Drizzle ORM is used for schema definitions, but **raw SQL queries** are used in the data layer because `node:sqlite` has compatibility issues with Drizzle's query builder (specifically, `node:sqlite` Statement objects don't have a `raw()` method that Drizzle expects)
 - **Seeding**: Run `pnpm run seed` to create tables and insert sample data
 
 ## TypeScript Configuration
 - **Compiler**: TypeScript with `tsx` runtime
 - **Config**: `tsconfig.json` with `allowImportingTsExtensions: true`
-- **JSX**: Uses Hono's JSX runtime (`jsxImportSource: "hono/jsx"`)
 - **Type checking**: Run `pnpm run typecheck`
 
 ## Constraints
 - Use `HX-Request-Type == 'partial'` to detect HTMX partial requests
-- Navigation metadata (breadcrumbs, subAside, contextActions) is JSON-stringified into `x-init`
+- Navigation metadata (breadcrumbs, subAside, contextActions) is JSON-stringified into `data-state` attribute on a hidden div, parsed by Alpine's `x-init`
 - No separate API endpoints; state is embedded in HTML responses
 - Both portal and customers apps have 404 and error handlers to reset navigation state
+- **HTMX attribute expressions**: Avoid using JavaScript expressions in HTMX attributes that reference Alpine template variables. These get evaluated on the server where the variables don't exist. Use simple path references instead.
 
-## HTMX + Alpine Gotcha
+## HTMX + Alpine Integration
 - Alpine dynamically re-renders breadcrumbs/subAside/mainAside when store updates
 - HTMX does NOT auto-process new elements added by Alpine outside the swap target
-- **Fix**: Call `htmx.process()` on these containers in `setState` after store update
+- **Fix**: Call `htmx.process()` on these containers in `setState` after store update (implemented in layout)
+- **Important**: `hono/html` tagged templates do NOT escape their content, making them ideal for Alpine.js templates. Regular TSX does escape content, which breaks Alpine expressions containing special characters like `>`, `<`, `{`, `}`.
 
 ## Special Features & Discoveries
 
 ### 1. Node.js 22.x Built-in SQLite (`node:sqlite`)
 **Discovery**: Node.js 22.x includes a built-in `node:sqlite` module that works on Termux!
 - **No installation needed** - Available in Node.js 22.x core
-- **API-compatible** with `better-sqlite3` - Works with Drizzle ORM's `better-sqlite3` adapter
+- **Mostly API-compatible** with `better-sqlite3` - BUT has some differences:
+  - Statement objects don't have a `raw()` method (required by Drizzle ORM's better-sqlite3 adapter)
+  - Returns rows as null-prototype objects (`Object.create(null)`)
 - **Works on Termux** - Confirmed working on Android/Termux environment
+- **Workaround**: Use raw SQL queries instead of Drizzle ORM's query builder for data access
 - **Usage**:
   ```typescript
   import { DatabaseSync } from 'node:sqlite';
   const db = new DatabaseSync('database.db');
+  const stmt = db.prepare('SELECT * FROM table');
+  const rows = stmt.all();
   ```
 
-### 2. Hono JSX with Alpine.js Directives
-**Discovery**: Hono's JSX runtime preserves Alpine.js directives as HTML attributes
-- **Alpine.js in JSX**: Directives like `x-data`, `x-for`, `x-text` work directly in JSX
+### 2. Hono html with Alpine.js Directives
+**Discovery**: `hono/html` tagged templates preserve Alpine.js directives as HTML attributes and do NOT escape content
 - **Template syntax**: Use `x-key` instead of `:key` for Alpine.js templates
 - **Class binding**: Use `x-bind:class` instead of `:class`
-- **Example**:
-  ```tsx
-  <div x-data>
-    <template x-for="item in items" x-key="item.id">
-      <button x-text="item.label" x-bind:class="{ active: item.active }"></button>
-    </template>
-  </div>
+- **Example with hono/html**:
+  ```typescript
+  import { html } from 'hono/html';
+  
+  function Breadcrumbs() {
+    return html`<nav x-data>
+      <template x-for="(item, index) in items" x-key="item.path">
+        <template x-if="index > 0"><span>/</span></template>
+        <button x-text="item.label"></button>
+      </template>
+    </nav>`;
+  }
   ```
 
-### 3. TSX Templates with Hono
-**Pattern**: Views are now TSX components instead of `hono/html` tagged templates
-- **Type-safe props**: Components have typed props for better IDE support
-- **Component-based**: Reusable components like `NavigationState`, `ContextActions`
-- **Seamless integration**: Works with `c.html(<Component />)` in routes
-
-### 4. Drizzle ORM with node:sqlite
-**Setup**: Using `drizzle-orm/better-sqlite3` adapter with `node:sqlite`
-- **Database**: `db/database.ts` exports drizzle instance
-- **Schema**: `db/schema.ts` defines tables with Drizzle
-- **Seeding**: `db/seed.ts` creates tables and inserts data
-- **Data access**: `apps/customers/data.ts` uses Drizzle queries
+### 3. Drizzle ORM with node:sqlite - Limitations
+**Setup**: While Drizzle ORM can use the `better-sqlite3` adapter with `node:sqlite`, there are compatibility issues:
+- **Missing `raw()` method**: Drizzle's better-sqlite3 adapter expects a `raw()` method on Statement objects, which `node:sqlite` doesn't provide
+- **Workaround**: Use raw SQL queries with `sqlite.prepare()` and `stmt.all()` / `stmt.get()` instead of Drizzle's query builder
+- **Schema**: Drizzle is still used for schema definitions and type safety
+- **Data access**: Use raw SQL in the data layer (see `apps/customers/data.ts`)
 
 ## Scripts
 ```bash
@@ -119,3 +136,4 @@ pnpm run typecheck
 - **No build step** - Uses `tsx` for direct TypeScript execution
 - **File paths**: Use forward slashes (`/`) in module paths
 - **Database location**: SQLite database file is created at `db/hax-portal.db`
+- **Path handling**: Use `import { join, dirname } from 'node:path'` and `import { fileURLToPath } from 'node:url'` to get absolute paths for database files.

@@ -1,6 +1,6 @@
 // Shared HAX utilities
 
-import { Layout } from './layout.tsx';
+import { renderLayout } from './layout.ts';
 import type { Context } from 'hono';
 
 // Global Render Helper (Full Page vs HTMX Partial Switch)
@@ -12,7 +12,7 @@ export const renderSmart = function(c: Context, viewHtml: any) {
   }
   
   // For full page, wrap in layout
-  return c.html(<Layout>{viewHtml}</Layout>);
+  return c.html(renderLayout({ content: viewHtml }));
 };
 
 // Make available globally

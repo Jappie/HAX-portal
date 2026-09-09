@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
-import { renderSmart } from '../../shared/hax.tsx';
-import { portalViews } from './views.tsx';
+import { renderSmart } from '../../shared/hax.ts';
+import { portalViews } from './views.ts';
 import type { Context } from 'hono';
 
 const routes = new Hono();
@@ -14,7 +14,7 @@ routes.get('/portal', (c: Context) => {
     contextActions: []
   };
 
-  const content = <portalViews.home meta={meta} />;
+  const content = portalViews.home({ meta });
   return renderSmart(c, content);
 });
 

@@ -1,5 +1,5 @@
-import { db, sqlite } from './database.js';
-import { customers, contacts, addresses, notes, portalApps } from './schema.js';
+import { db, sqlite } from './database.ts';
+import { customers, contacts, addresses, notes, portalApps } from './schema.ts';
 
 async function createTables() {
   console.log('🛠️  Creating tables...');
@@ -63,14 +63,14 @@ async function seedDatabase() {
   // Create tables first
   await createTables();
 
-  // Clear existing data
+  // Clear existing data using Drizzle ORM
   await db.delete(notes);
   await db.delete(addresses);
   await db.delete(contacts);
   await db.delete(customers);
   await db.delete(portalApps);
 
-  // Insert customers
+  // Insert customers using Drizzle ORM
   const customerData = [
     { id: '123', name: 'Aramco', industry: 'Oil & Gas', location: 'Saudi Arabia' },
     { id: '456', name: 'Shell', industry: 'Oil & Gas', location: 'Netherlands' },
@@ -82,7 +82,7 @@ async function seedDatabase() {
   }
   console.log('✅ Inserted customers');
 
-  // Insert contacts
+  // Insert contacts using Drizzle ORM
   const contactData = [
     { id: '356', customerId: '123', name: 'Jenssen', email: 'jenssen@aramco.com', phone: '+966-123-456-7890' },
     { id: '357', customerId: '123', name: 'Mohammed', email: 'mohammed@aramco.com', phone: '+966-123-456-7891' },
@@ -95,7 +95,7 @@ async function seedDatabase() {
   }
   console.log('✅ Inserted contacts');
 
-  // Insert addresses
+  // Insert addresses using Drizzle ORM
   const addressData = [
     { id: 'addr-1', customerId: '123', type: 'HQ', street: 'King Abdulaziz Road', city: 'Dhahran', country: 'Saudi Arabia' },
     { id: 'addr-2', customerId: '456', type: 'HQ', street: 'Carel van Bylandtlaan 30', city: 'The Hague', country: 'Netherlands' },
@@ -107,7 +107,7 @@ async function seedDatabase() {
   }
   console.log('✅ Inserted addresses');
 
-  // Insert notes
+  // Insert notes using Drizzle ORM
   const noteData = [
     { id: 'note-1', customerId: '123', content: 'Large oil contract pending', date: '2024-01-15', author: 'Sales Team' },
   ];
@@ -117,9 +117,9 @@ async function seedDatabase() {
   }
   console.log('✅ Inserted notes');
 
-  // Insert portal apps
+  // Insert portal apps using Drizzle ORM
   const appData = [
-    { name: 'customers', fullname: 'Customers', category: 'main', mountPath: '/Customers', modulePath: '../../apps/customers/app.tsx' },
+    { name: 'customers', fullname: 'Customers', category: 'main', mountPath: '/Customers', modulePath: '../../apps/customers/app.ts' },
   ];
 
   for (const app of appData) {

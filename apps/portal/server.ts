@@ -1,5 +1,5 @@
 import { serve } from '@hono/node-server';
-import app from './app.tsx';
+import app from './app.ts';
 
 const port = 3000;
 
