@@ -29,7 +29,7 @@ export function renderLayout({ title = 'Enterprise Portal', content = '' }) {
     
     <!-- Alpine AJAX & Alpine.js -->
     <script src="/assets/js/alpine-ajax.patched.min.js"></script>
-    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
     
     <!-- Navigation Store -->
     <script>
