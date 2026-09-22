@@ -1,0 +1,62 @@
+.settings-backdrop {
+    position: fixed;
+    inset: 0;
+    background: transparent;
+    z-index: 999;
+}
+
+.settings-panel {
+    position: fixed;
+    bottom: 80px;
+    right: 20px;
+    width: 280px;
+    max-height: 80vh;
+    overflow-y: auto;
+    background: var(--surface-default);
+    border: var(--os-border);
+    border-radius: var(--os-radius);
+    box-shadow: var(--shadow-5);
+    z-index: 1002;
+    padding: var(--size-4);
+    display: flex;
+    flex-direction: column;
+    gap: var(--size-3);
+    transition: border-radius 0.3s ease;
+}
+
+.settings-panel h3 {
+    margin: 0 0 var(--size-2) 0;
+    font-size: var(--font-size-2);
+    border-bottom: var(--os-border);
+    padding-bottom: var(--size-2);
+}
+
+.color-grid { display: flex; flex-wrap: wrap; gap: var(--size-2); }
+.color-swatch { 
+    width: var(--size-5); 
+    height: var(--size-5); 
+    border-radius: var(--radius-round); 
+    cursor: pointer; 
+    border: 2px solid transparent; 
+}
+.color-swatch.active { border-color: var(--text-primary); }
+
+/* Extracted from ThemeMenu.template.js inline styles */
+.ui-select-label {
+    display: flex; 
+    flex-direction: column; 
+    gap: 5px;
+}
+.ui-select-title {
+    font-size: 12px; 
+    font-weight: bold;
+}
+.ui-select-field {
+    width: 100%;
+}
+.accent-shade-label {
+    font-size: 12px; 
+    font-weight: bold; 
+    display: block; 
+    margin-bottom: 5px;
+}

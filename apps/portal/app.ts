@@ -1,11 +1,19 @@
 import { Hono } from 'hono';
 import { html, raw } from 'hono/html';
+import { serveStatic } from '@hono/node-server/serve-static';
 import { renderSmart } from '../../shared/hax.ts';
 import portalRoutes from './routes.ts';
 import { discoverApps } from './appDiscovery.ts';
+import { sessionMiddleware } from '../../shared/auth.ts';
 import type { Context } from 'hono';
 
 const app = new Hono();
+
+// Serve static assets from /assets directory
+app.use('/assets/*', serveStatic({ root: './' }));
+
+// Apply session middleware to all portal routes
+app.use('*', sessionMiddleware);
 
 // Discover and mount apps dynamically
 const discoveredApps = await discoverApps();
@@ -18,12 +26,12 @@ const mainApps = discoveredApps.map(appInfo => ({
 }));
 
 // Make mainApps available globally for the layout
-(globalThis as any).mainApps = mainApps;
+(globalThis as { mainApps?: AppInfo[] }).mainApps = mainApps;
 
 for (const appInfo of discoveredApps) {
   try {
     // Dynamic import of the app module
-    const appModule = await import(appInfo.modulePath) as { default: Hono };
+    const appModule = await import(appInfo.modulePath);
     app.route(appInfo.mountPath, appModule.default);
     console.log(`Mounted app: ${appInfo.name} at ${appInfo.mountPath}`);
   } catch (err) {

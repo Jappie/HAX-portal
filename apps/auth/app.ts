@@ -1,30 +1,22 @@
+// Auth App - User, Role, and ABAC Management
+// This app provides authentication routes and admin screens
+
 import { Hono } from 'hono';
 import { html, raw } from 'hono/html';
-import { serveStatic } from '@hono/node-server/serve-static';
 import { renderSmart } from '../../shared/hax.ts';
-import customerRoutes from './routes.ts';
-import { authorizeAbac } from '../../shared/abacEngine.ts';
-import { sessionMiddleware, requireAuth } from '../../shared/auth.ts';
+import { sessionMiddleware } from '../../shared/auth.ts';
+import authRoutes from './routes.ts';
 import type { Context } from 'hono';
 
 const app = new Hono();
 
-// Serve static assets from /assets directory
-app.use('/assets/*', serveStatic({ root: './' }));
-
-// Apply session middleware
+// Apply session middleware to all auth routes
 app.use('*', sessionMiddleware);
 
-// Require authentication for all customer routes
-app.use('/*', requireAuth);
+// Mount auth routes (login, logout, etc.)
+app.route('/', authRoutes);
 
-// Apply ABAC middleware for the customers resource globally to all customer routes
-app.use('/*', authorizeAbac('customers'));
-
-// Mount customer routes
-app.route('/', customerRoutes);
-
-// 404 Handler - Unmatched customer routes
+// 404 Handler
 app.notFound((c: Context) => {
   const meta = {
     currentPath: c.req.path,
@@ -38,13 +30,13 @@ app.notFound((c: Context) => {
     data-state='${stateJson}'
     style="display: none;"></div>`, []);
   const content = html`${navState}
-    <h2>404 - Customer Page Not Found</h2>
-    <p>The customer page "${c.req.path}" does not exist.</p>
+    <h2>404 - Auth Page Not Found</h2>
+    <p>The auth page "${c.req.path}" does not exist.</p>
   `;
   return renderSmart(c, content);
 });
 
-// Global Error Handler - All other errors in customers app
+// Global Error Handler
 app.onError((err: Error, c: Context) => {
   const meta = {
     currentPath: c.req.path,

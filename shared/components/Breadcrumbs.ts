@@ -12,7 +12,7 @@ export function Breadcrumbs() {
           hx-swap="innerHTML" 
           x-bind:hx-push-url="item.path"
           x-text="item.label"
-        >
+        ></button>
       </span>
     </template>
   </nav>`;

@@ -4,7 +4,6 @@
 
 import { drizzle } from 'drizzle-orm/node-sqlite';
 import { DatabaseSync } from 'node:sqlite';
-import * as schema from './schema.ts';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -14,7 +13,6 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const sqlite = new DatabaseSync(join(__dirname, 'hax-portal.db'));
 
 // Initialize Drizzle with node:sqlite client (native support per Hint.md)
-// Schema is passed separately via the config object
 const db = drizzle({ client: sqlite });
 
 // Export drizzle instance
@@ -33,7 +31,7 @@ function closeDatabase() {
     if (sqlite && typeof sqlite.close === 'function') {
       sqlite.close();
     }
-  } catch (err) {
+  } catch {
     // Ignore errors during shutdown - database might already be closed
     // console.error('Error closing database:', err.message);
   }

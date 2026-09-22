@@ -8,12 +8,36 @@ import type { Customer, Contact, Address, Note } from '../../db/schema.ts';
 // ==========================================
 export const customersData = {
   // Get all customers - Using Drizzle ORM query builder with node-sqlite driver
-  async getAll(): Promise<Customer[]> {
+  async getAll(readFields?: string[]): Promise<Partial<Customer>[]> {
+    if (readFields && readFields.length > 0) {
+      // Build projection dynamically
+      const selection: Record<string, unknown> = {};
+      for (const field of readFields) {
+        if (field in customers) {
+          selection[field] = (customers as Record<string, unknown>)[field];
+        }
+      }
+      if (Object.keys(selection).length === 0) {
+        return []; // No valid fields to read
+      }
+      return db.select(selection).from(customers).all() as Partial<Customer>[];
+    }
     return db.select().from(customers).all();
   },
 
   // Get customer by ID
-  async getById(id: string): Promise<Customer | null> {
+  async getById(id: string, readFields?: string[]): Promise<Partial<Customer> | null> {
+    if (readFields && readFields.length > 0) {
+      const selection: Record<string, unknown> = {};
+      for (const field of readFields) {
+        if (field in customers) {
+          selection[field] = (customers as Record<string, unknown>)[field];
+        }
+      }
+      if (Object.keys(selection).length === 0) return null;
+      const result = await db.select(selection).from(customers).where(eq(customers.id, id)).get();
+      return result as Partial<Customer> | null;
+    }
     const result = await db.select().from(customers).where(eq(customers.id, id)).get();
     return result || null;
   },

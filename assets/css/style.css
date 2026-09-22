@@ -1,0 +1,128 @@
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+}
+
+body {
+    font-family: var(--os-font, var(--font-sans));
+    font-size: var(--font-size-base, inherit);
+    
+    /* Re-bind core semantic tokens so they pick up dynamic --palette-source from this scope */
+    --text-primary: light-dark(var(--gray-15), var(--gray-1));
+    --text-muted: light-dark(var(--gray-13), var(--gray-4));
+    --surface-default: light-dark(var(--gray-1), var(--gray-13));
+    --surface-tonal: light-dark(var(--gray-3), var(--gray-12));
+    --surface-elevated: light-dark(var(--gray-1), var(--gray-12));
+    --border-color: light-dark(var(--gray-4), var(--gray-12));
+
+    background: var(--surface-default);
+    color: var(--text-primary);
+    line-height: var(--font-lineheight-3);
+    transition: background-color 0.3s ease, color 0.3s ease;
+    color-scheme: light;
+}
+
+body.ui-dark {
+    color-scheme: dark;
+}
+
+.mobile-layout {
+    display: flex;
+    flex-direction: column;
+    height: 100dvh;
+    max-width: 450px;
+    margin: 0 auto;
+    background: var(--surface-default);
+    position: relative;
+    box-shadow: var(--shadow-5);
+}
+
+.header { 
+    flex-shrink: 0;
+    padding: var(--size-3) var(--size-4);
+    background: var(--surface-tonal);
+    text-align: center;
+    border-bottom: var(--os-border);
+    box-shadow: var(--os-shadow);
+    z-index: 10;
+}
+
+.header h1 {
+    margin: 0;
+    font-size: var(--font-size-4);
+    font-weight: var(--font-weight-7);
+}
+
+.content {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
+    padding: var(--size-4);
+}
+
+.bottom-nav {
+    flex-shrink: 0;
+    background: var(--surface-tonal);
+    display: flex;
+    justify-content: space-around;
+    padding: var(--size-2) 0;
+    border-top: var(--os-border);
+    box-shadow: var(--os-shadow);
+    z-index: 1000;
+}
+
+.nav-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: var(--font-size-0);
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    transition: color 0.2s ease;
+    text-decoration: none;
+    min-width: 60px;
+    gap: var(--size-1);
+}
+
+.nav-btn.active {
+    color: var(--os-accent);
+}
+
+.nav-btn span:first-child {
+    font-size: var(--font-size-3);
+}
+
+.full { width: 100%; }
+
+/* FAB (Floating Action Button) */
+.fab {
+    position: absolute;
+    bottom: var(--size-8);
+    right: var(--size-4);
+    width: var(--size-8);
+    height: var(--size-8);
+    border-radius: var(--radius-round);
+    background: var(--os-accent);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--shadow-4);
+    cursor: pointer;
+    text-decoration: none;
+    z-index: 1001;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.fab:active {
+    transform: scale(0.95);
+    box-shadow: var(--shadow-2);
+}
+
+.fab span {
+    font-size: var(--font-size-5);
+}

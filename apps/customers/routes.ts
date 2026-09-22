@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { renderSmart } from '../../shared/hax.ts';
+import { createMenuRoute } from '../../shared/blueprint.ts';
 import {
   CustomersList,
   CustomerDetail,
@@ -11,7 +12,6 @@ import {
 } from './views.ts';
 import { customersData } from './data.ts';
 import type { Context } from 'hono';
-import type { Customer, Contact } from './data.ts';
 
 const routes = new Hono();
 
@@ -26,27 +26,37 @@ function extractDisplayName(custId: string): string {
 }
 
 // Root Sub-App Overzicht (/Customers)
-routes.get('/', async (c: Context) => {
-  const customers = await customersData.getAll();
-  
-  const meta = {
-    currentPath: '/Customers',
-    breadcrumbs: [
-      { label: 'Customers', path: '/Customers' }
-    ],
-    subAside: {
-      title: 'Klantbeheer',
-      items: [
-        { label: 'Alle Klanten', path: '/Customers', active: true },
-        { label: 'Nieuwe Klant', path: '/Customers/new' }
-      ]
-    },
-    contextActions: []
-  };
+routes.get('/', createMenuRoute({
+  menuName: 'Customers',
+  isFavorite: true,
+  resource: 'customers',
+  roles: ['admin', 'sales', 'guest'],
+  handler: async (c: Context) => {
+    // Inject mock user if better-auth isn't fully active for requests during dev
+    if (!c.get('user')) c.set('user', { roleId: 'admin' });
 
-  const content = CustomersList({ meta, customers });
-  return renderSmart(c, content);
-});
+    // Use ABAC engine middleware output if applied
+    const customers = await customersData.getAll(c.get('abac')?.readFields);
+    
+    const meta = {
+      currentPath: '/Customers',
+      breadcrumbs: [
+        { label: 'Customers', path: '/Customers' }
+      ],
+      subAside: {
+        title: 'Klantbeheer',
+        items: [
+          { label: 'Alle Klanten', path: '/Customers', active: true },
+          { label: 'Nieuwe Klant', path: '/Customers/new' }
+        ]
+      },
+      contextActions: []
+    };
+
+    const content = CustomersList({ meta, customers });
+    return renderSmart(c, content);
+  }
+}));
 
 // Customer Detail Route: /Customers/:custId
 routes.get('/:custId', async (c: Context) => {

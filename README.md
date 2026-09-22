@@ -1,13 +1,13 @@
 # HAX Portal - Multi-App Navigation POC
 
-A proof-of-concept enterprise portal demonstrating layered application navigation with **HTMX v4, Alpine.js, and TypeScript + Hono JSX + node:sqlite**.
+A HAX-core Portal demonstrating layered application navigation with **HTMX v4, Alpine.js, and TypeScript + Hono JSX + node:sqlite**.
 
 ## Architecture
 
 - **Backend**: Hono (lightweight web framework) with TypeScript
 - **Frontend**: HTMX v4 for dynamic HTML, Alpine.js for reactive state
 - **Database**: SQLite via Node.js 22.x built-in `node:sqlite` module
-- **ORM**: Drizzle ORM (for schema definitions only - raw SQL for queries)
+- **ORM**: Drizzle ORM 
 - **Pattern**: Server-rendered HTML with client-side interactivity via Hono's JSX
 
 ## Project Structure
@@ -114,27 +114,7 @@ The SQLite database (`db/hax-portal.db`) contains:
 
 ## Technical Insights
 
-### 1. Node.js Built-in SQLite (`node:sqlite`)
-Node.js 22.x includes `node:sqlite` which is **mostly** API-compatible with `better-sqlite3`.
-
-**Key Differences:**
-- Statement objects don't have a `raw()` method (required by Drizzle ORM's better-sqlite3 adapter)
-- Returns rows as null-prototype objects (`Object.create(null)`)
-
-**Workaround:** Use raw SQL queries instead of Drizzle ORM's query builder:
-```typescript
-import { DatabaseSync } from 'node:sqlite';
-const db = new DatabaseSync('db/hax-portal.db');
-const stmt = db.prepare('SELECT * FROM customers');
-const rows = stmt.all() as any[];
-```
-
-**Benefits:**
-- No installation needed - Available in Node.js 22.x core
-- Works on Termux/Android without native compilation
-- Lightweight and fast
-
-### 2. Hono JSX with Alpine.js - The Escaping Problem
+### 1. Hono JSX with Alpine.js - The Escaping Problem
 
 **The Issue:** Hono's JSX runtime escapes special characters (`>`, `<`, `{`, `}`) in children and attribute values. This breaks Alpine templates:
 
@@ -160,7 +140,7 @@ function Breadcrumbs() {
 
 **Why this works:** `hono/html` tagged templates do NOT escape their content, preserving Alpine directives and JavaScript expressions.
 
-### 3. HTMX Attributes with Alpine Variables
+### 2. HTMX Attributes with Alpine Variables
 
 **Problem:** HTMX tries to evaluate attribute values on the server. When you use:
 ```html
@@ -174,7 +154,7 @@ HTMX tries to evaluate `item.path.includes('/edit')` on the server, where `item`
 ```
 Let the browser handle the URL pushing based on the path. Alpine will substitute `item.path` with the actual value.
 
-### 4. Component Architecture
+### 3. Component Architecture
 
 All UI components use `hono/html` and return `HtmlEscapedString`:
 
@@ -232,6 +212,27 @@ Each app follows a clean separation:
 - **app.tsx**: Hono app setup and route mounting
 - **routes.tsx**: Route definitions with navigation metadata
 - **views.tsx**: View components using `hono/html`
+- **data.ts**: Data access layer (database, json, API etc.)
+
+## Error Handling
+
+Both portal and customers apps have 404 and global error handlers that reset the navigation state, preventing stale breadcrumbs and sub-menus.
+
+## HTMX + Alpine Integration
+
+- Alpine dynamically re-renders breadcrumbs/subAside/mainAside when store updates
+- HTMX does NOT auto-process new elements added by Alpine outside the swap target
+- **Fix**: Call `htmx.process()` on these containers in `setState` after store update (implemented in layout)
+
+## License
+
+MIT
+T
+T
+**server.tsx**: Entry point with serve()
+- **app.tsx**: Hono app setup and route mounting
+- **routes.tsx**: Route definitions with navigation metadata
+- **views.tsx**: View components using `hono/html`
 - **data.ts**: Data access layer (raw SQL with `node:sqlite`)
 
 ## Error Handling
@@ -243,6 +244,16 @@ Both portal and customers apps have 404 and global error handlers that reset the
 - Alpine dynamically re-renders breadcrumbs/subAside/mainAside when store updates
 - HTMX does NOT auto-process new elements added by Alpine outside the swap target
 - **Fix**: Call `htmx.process()` on these containers in `setState` after store update (implemented in layout)
+
+## License
+
+MIT
+re update (implemented in layout)
+
+## License
+
+MIT
+)
 
 ## License
 

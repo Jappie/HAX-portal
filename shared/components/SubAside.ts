@@ -14,7 +14,7 @@ export function SubAside() {
             x-bind:hx-push-url="item.path"
             x-bind:class="{ 'active': item.active }"
             x-text="item.label"
-          >
+          ></button>
         </li>
       </template>
     </ul>

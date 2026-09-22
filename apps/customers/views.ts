@@ -1,4 +1,3 @@
-// @ts-nocheck
 import type { Customer, Contact, Address, Note } from './data.ts';
 import { html, raw } from 'hono/html';
 
@@ -56,71 +55,74 @@ function contextActionsHtml(actions: ContextAction[]) {
   
   return html`<div class="actions" x-data>
     <template x-for="action in $store.navigation.contextActions" x-key="action.label">
-      <button 
-        x-bind:class="'btn ' + action.class"
-        x-text="action.label"
-        x-bind:hx-get="action.path"
-        hx-target="#main-content"
-        x-bind:hx-push-url="action.path"
-        x-show="action.path"
-      >
-      </button>
-      <button 
-        x-bind:class="'btn ' + action.class"
-        x-text="action.label"
-        x-on:click="if (action.action === 'submit-form') { document.getElementById('edit-contact-form').requestSubmit(); }"
-        x-show="action.action && !action.path"
-      >
-      </button>
+      <span>
+        <button 
+          x-bind:class="'btn ' + action.class"
+          x-text="action.label"
+          x-bind:hx-get="action.path"
+          hx-target="#main-content"
+          x-bind:hx-push-url="action.path"
+          x-show="action.path"
+        >
+        </button>
+        <button 
+          x-bind:class="'btn ' + action.class"
+          x-text="action.label"
+          x-on:click="if (action.action === 'submit-form') { document.getElementById('edit-contact-form').requestSubmit(); }"
+          x-show="action.action && !action.path"
+        >
+        </button>
+      </span>
     </template>
   </div>`;
 }
 
 // Customers List View
-export function CustomersList({ meta, customers }: { meta: NavigationMeta; customers: Customer[] }) {
+export function CustomersList({ meta, customers }: { meta: NavigationMeta; customers: Partial<Customer>[] }) {
   const navState = getNavStateScript(meta);
   const actions = contextActionsHtml(meta.contextActions);
   
-  const customerItems = customers.map(customer => 
-    html`<li style="margin-bottom: 0.75rem;">
-      <button 
-        class="btn btn-secondary" 
-        hx-get="/Customers/${customer.id}" 
-        hx-target="#main-content" 
-        hx-push-url="/Customers/${customer.id}"
-      >
-        ${customer.name} (${customer.id})
-      </button>
-    </li>`
+  // Use OPUI CardSeries
+  const customerItems = customers.map((customer, index) => 
+    html`<div class="ui-card ui-outlined ui-elevated ui-tonal ui-primary mb-4" style="border-color: color-mix(in srgb, var(--color-series-${(index % 4) + 1}) 25%, transparent); --_shadow-color: var(--color-series-${(index % 4) + 1}); position: relative; overflow: hidden;">
+      <div class="ui-card-bg-glow" style="background-color: var(--color-series-${(index % 4) + 1});"></div>
+      <div class="ui-content" style="position: relative; z-index: 1;">
+        <h3 style="margin: 0 0 var(--size-2) 0;">${customer.name}</h3>
+        <p style="margin: 0; color: var(--text-muted);">${customer.id} - ${customer.industry || 'N/A'}</p>
+        <div style="margin-top: var(--size-3);">
+          <button 
+            class="btn btn-secondary" 
+            hx-get="/Customers/${customer.id}" 
+            hx-target="#main-content" 
+            hx-push-url="/Customers/${customer.id}"
+          >
+            View Details
+          </button>
+        </div>
+      </div>
+    </div>`
   );
 
   return html`${navState}
-    <h2>Klanten Overzicht</h2>
-    <p>Selecteer een klant om het gelaagde menu en de details te zien:</p>
-    <ul style="list-style: none; padding: 0;">
+    <div class="content-header">
+      <h2>Customers Overview</h2>
+      ${actions}
+    </div>
+    <p>Select a customer to view layered menu and details:</p>
+    <div style="display: grid; gap: var(--size-4);">
       ${customerItems}
-      <li style="margin-bottom: 0.75rem;">
-        <button 
-          class="btn btn-secondary" 
-          hx-get="/Customers/123/Contact/356/edit" 
-          hx-target="#main-content" 
-          hx-push-url="false"
-        >
-          Aramco - Contact Jenssen Bewerken (Direct Test)
-        </button>
-      </li>
-    </ul>`;
+    </div>`;
 }
 
-// Customer Detail View
-export function CustomerDetail({ meta, customer, custId }: { meta: NavigationMeta; customer: Customer | null; custId: string }) {
+// Customer Detail View with OPUI Card
+export function CustomerDetail({ meta, customer, custId }: { meta: NavigationMeta; customer: Partial<Customer> | null; custId: string }) {
   const navState = getNavStateScript(meta);
   const actions = contextActionsHtml(meta.contextActions);
   
   if (!customer) {
     return html`${navState}
-      <h2>Klant niet gevonden</h2>
-      <p>Klant met ID ${custId} bestaat niet.</p>`;
+      <h2>Customer Not Found</h2>
+      <p>Customer with ID ${custId} does not exist.</p>`;
   }
 
   return html`${navState}
@@ -129,31 +131,35 @@ export function CustomerDetail({ meta, customer, custId }: { meta: NavigationMet
       ${actions}
     </div>
 
-    <div style="display: grid; gap: 1rem; max-width: 600px;">
-      <div>
-        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Klant ID:</label>
-        <span style="display: block; padding: 0.5rem; background: #f1f5f9; border-radius: 4px;">${custId}</span>
-      </div>
-      <div>
-        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Industrie:</label>
-        <span style="display: block; padding: 0.5rem; background: #f1f5f9; border-radius: 4px;">${customer.industry || 'N/A'}</span>
-      </div>
-      <div>
-        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Locatie:</label>
-        <span style="display: block; padding: 0.5rem; background: #f1f5f9; border-radius: 4px;">${customer.location || 'N/A'}</span>
+    <div class="ui-card ui-outlined ui-elevated ui-tonal" style="max-width: 600px; margin-bottom: var(--size-6);">
+      <div class="ui-content">
+        <div style="display: grid; gap: var(--size-3);">
+          <div>
+            <label style="display: block; margin-bottom: var(--size-2); font-weight: var(--font-weight-6);">Customer ID:</label>
+            <span style="display: block; padding: var(--size-2); background: var(--surface-tonal); border-radius: var(--radius-2);">${custId}</span>
+          </div>
+          <div>
+            <label style="display: block; margin-bottom: var(--size-2); font-weight: var(--font-weight-6);">Industry:</label>
+            <span style="display: block; padding: var(--size-2); background: var(--surface-tonal); border-radius: var(--radius-2);">${customer.industry || 'N/A'}</span>
+          </div>
+          <div>
+            <label style="display: block; margin-bottom: var(--size-2); font-weight: var(--font-weight-6);">Location:</label>
+            <span style="display: block; padding: var(--size-2); background: var(--surface-tonal); border-radius: var(--radius-2);">${customer.location || 'N/A'}</span>
+          </div>
+        </div>
       </div>
     </div>
 
-    <div style="margin-top: 2rem;">
-      <h3 style="font-size: 1.125rem; margin-bottom: 1rem;">Snelle Acties</h3>
-      <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+    <div style="margin-top: var(--size-6);">
+      <h3 style="font-size: var(--font-size-2); margin-bottom: var(--size-4);">Quick Actions</h3>
+      <div style="display: flex; gap: var(--size-2); flex-wrap: wrap;">
         <button 
           class="btn btn-secondary" 
           hx-get="/Customers/${custId}/Contact" 
           hx-target="#main-content" 
           hx-push-url="/Customers/${custId}/Contact"
         >
-          Bekijk Contacten
+          View Contacts
         </button>
         <button 
           class="btn btn-secondary" 
@@ -161,7 +167,7 @@ export function CustomerDetail({ meta, customer, custId }: { meta: NavigationMet
           hx-target="#main-content" 
           hx-push-url="/Customers/${custId}/Address"
         >
-          Bekijk Adressen
+          View Addresses
         </button>
         <button 
           class="btn btn-secondary" 
@@ -169,14 +175,14 @@ export function CustomerDetail({ meta, customer, custId }: { meta: NavigationMet
           hx-target="#main-content" 
           hx-push-url="/Customers/${custId}/Notes"
         >
-          Bekijk Notities
+          View Notes
         </button>
       </div>
     </div>`;
 }
 
-// Contacts List View - 
-export function ContactsList({ meta, customer, custId, contacts }: { meta: NavigationMeta; customer: Customer | null; custId: string; contacts: Contact[] }) {
+// Contacts List View with OPUI CardSeries
+export function ContactsList({ meta, customer, custId, contacts }: { meta: NavigationMeta; customer: Partial<Customer> | null; custId: string; contacts: Contact[] }) {
   const navState = getNavStateScript(meta);
   const actions = contextActionsHtml(meta.contextActions);
   const customerName = customer ? customer.name : custId;
@@ -184,24 +190,30 @@ export function ContactsList({ meta, customer, custId, contacts }: { meta: Navig
   if (contacts.length === 0) {
     return html`${navState}
       <div class="content-header">
-        <h2>Contacten voor ${customerName}</h2>
+        <h2>Contacts for ${customerName}</h2>
         ${actions}
       </div>
-      <p>Geen contacten gevonden voor deze klant.</p>`;
+      <p>No contacts found for this customer.</p>`;
   }
 
-  const contactItems = contacts.map(contact => 
-    html`<li style="margin-bottom: 0.75rem; padding: 0.75rem; background: #f8fafc; border-radius: 6px;">
-      <div style="display: flex; justify-content: space-between; align-items: center;">
-        <span style="font-weight: 600;">${contact.name}</span>
-        <div style="display: flex; gap: 0.5rem;">
+  const contactItems = contacts.map((contact, index) => 
+    html`<div class="ui-card ui-outlined ui-elevated ui-tonal mb-4" style="border-color: color-mix(in srgb, var(--color-series-${(index % 4) + 1}) 25%, transparent); --_shadow-color: var(--color-series-${(index % 4) + 1}); position: relative; overflow: hidden;">
+      <div class="ui-card-bg-glow" style="background-color: var(--color-series-${(index % 4) + 1});"></div>
+      <div class="ui-content" style="position: relative; z-index: 1; padding: var(--size-3);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--size-2);">
+          <span style="font-weight: var(--font-weight-6); font-size: var(--font-size-1);">${contact.name}</span>
+        </div>
+        <div style="margin-top: var(--size-2); font-size: var(--font-size-0); color: var(--text-muted);">
+          ${contact.email} | ${contact.phone}
+        </div>
+        <div style="margin-top: var(--size-3); display: flex; gap: var(--size-2);">
           <button 
             class="btn btn-secondary" 
             hx-get="/Customers/${custId}/Contact/${contact.id}" 
             hx-target="#main-content" 
             hx-push-url="/Customers/${custId}/Contact/${contact.id}"
           >
-            Bekijken
+            View
           </button>
           <button 
             class="btn btn-primary" 
@@ -209,35 +221,32 @@ export function ContactsList({ meta, customer, custId, contacts }: { meta: Navig
             hx-target="#main-content" 
             hx-push-url="false"
           >
-            Bewerken
+            Edit
           </button>
         </div>
       </div>
-      <div style="margin-top: 0.5rem; font-size: 0.875rem; color: #64748b;">
-        ${contact.email} | ${contact.phone}
-      </div>
-    </li>`
+    </div>`
   );
 
   return html`${navState}
     <div class="content-header">
-      <h2>Contacten voor ${customerName}</h2>
+      <h2>Contacts for ${customerName}</h2>
       ${actions}
     </div>
-    <ul style="list-style: none; padding: 0;">
+    <div style="display: grid; gap: var(--size-4);">
       ${contactItems}
-    </ul>`;
+    </div>`;
 }
 
-// Contact Detail View
-export function ContactDetail({ meta, customer, custId, contact, contactId }: { meta: NavigationMeta; customer: Customer | null; custId: string; contact: Contact | null; contactId: string }) {
+// Contact Detail View with OPUI Card
+export function ContactDetail({ meta, customer, custId, contact, contactId }: { meta: NavigationMeta; customer: Partial<Customer> | null; custId: string; contact: Contact | null; contactId: string }) {
   const navState = getNavStateScript(meta);
   const actions = contextActionsHtml(meta.contextActions);
   
   if (!contact) {
     return html`${navState}
-      <h2>Contact niet gevonden</h2>
-      <p>Contact met ID ${contactId} bestaat niet.</p>`;
+      <h2>Contact Not Found</h2>
+      <p>Contact with ID ${contactId} does not exist.</p>`;
   }
 
   const customerName = customer ? customer.name : custId;
@@ -248,28 +257,32 @@ export function ContactDetail({ meta, customer, custId, contact, contactId }: { 
       ${actions}
     </div>
 
-    <div style="display: grid; gap: 1rem; max-width: 500px;">
-      <div>
-        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Naam:</label>
-        <span style="display: block; padding: 0.5rem; background: #f1f5f9; border-radius: 4px;">${contact.name}</span>
-      </div>
-      <div>
-        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Email:</label>
-        <span style="display: block; padding: 0.5rem; background: #f1f5f9; border-radius: 4px;">${contact.email || 'N/A'}</span>
-      </div>
-      <div>
-        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Telefoon:</label>
-        <span style="display: block; padding: 0.5rem; background: #f1f5f9; border-radius: 4px;">${contact.phone || 'N/A'}</span>
-      </div>
-      <div>
-        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Klant:</label>
-        <span style="display: block; padding: 0.5rem; background: #f1f5f9; border-radius: 4px;">${customerName}</span>
+    <div class="ui-card ui-outlined ui-elevated ui-tonal" style="max-width: 500px;">
+      <div class="ui-content">
+        <div style="display: grid; gap: var(--size-3);">
+          <div>
+            <label style="display: block; margin-bottom: var(--size-2); font-weight: var(--font-weight-6);">Name:</label>
+            <span style="display: block; padding: var(--size-2); background: var(--surface-tonal); border-radius: var(--radius-2);">${contact.name}</span>
+          </div>
+          <div>
+            <label style="display: block; margin-bottom: var(--size-2); font-weight: var(--font-weight-6);">Email:</label>
+            <span style="display: block; padding: var(--size-2); background: var(--surface-tonal); border-radius: var(--radius-2);">${contact.email || 'N/A'}</span>
+          </div>
+          <div>
+            <label style="display: block; margin-bottom: var(--size-2); font-weight: var(--font-weight-6);">Phone:</label>
+            <span style="display: block; padding: var(--size-2); background: var(--surface-tonal); border-radius: var(--radius-2);">${contact.phone || 'N/A'}</span>
+          </div>
+          <div>
+            <label style="display: block; margin-bottom: var(--size-2); font-weight: var(--font-weight-6);">Customer:</label>
+            <span style="display: block; padding: var(--size-2); background: var(--surface-tonal); border-radius: var(--radius-2);">${customerName}</span>
+          </div>
+        </div>
       </div>
     </div>`;
 }
 
-// Contact Edit View
-export function ContactEdit({ meta, customer, custId, contact, contactId }: { meta: NavigationMeta; customer: Customer | null; custId: string; contact: Contact | null; contactId: string }) {
+// Contact Edit View with OPUI Card
+export function ContactEdit({ meta, customer, custId, contact, contactId }: { meta: NavigationMeta; customer: Partial<Customer> | null; custId: string; contact: Contact | null; contactId: string }) {
   const navState = getNavStateScript(meta);
   const actions = contextActionsHtml(meta.contextActions);
   
@@ -278,32 +291,36 @@ export function ContactEdit({ meta, customer, custId, contact, contactId }: { me
 
   return html`${navState}
     <div class="content-header">
-      <h2>Contact Bewerken: ${contactName}</h2>
+      <h2>Edit Contact: ${contactName}</h2>
       ${actions}
     </div>
 
-    <form id="edit-contact-form" style="display: flex; flex-direction: column; gap: 1rem; max-width: 400px;">
-      <div>
-        <label style="display: block; margin-bottom: 0.5rem;">Klantnummer / Organisatie:</label>
-        <input type="text" defaultValue="${customerName} (${custId})" disabled style="width: 100%; padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px;" />
+    <div class="ui-card ui-outlined ui-elevated ui-tonal" style="max-width: 400px;">
+      <div class="ui-content">
+        <form id="edit-contact-form" style="display: flex; flex-direction: column; gap: var(--size-3);">
+          <div>
+            <label style="display: block; margin-bottom: var(--size-2);">Customer / Organization:</label>
+            <input type="text" defaultValue="${customerName} (${custId})" disabled style="width: 100%; padding: var(--size-2); border: 1px solid var(--gray-4); border-radius: var(--radius-2);"/>
+          </div>
+          <div>
+            <label style="display: block; margin-bottom: var(--size-2);">Contact Name:</label>
+            <input type="text" name="contactName" defaultValue="${contact ? contact.name : ''}" style="width: 100%; padding: var(--size-2); border: 1px solid var(--gray-4); border-radius: var(--radius-2);"/>
+          </div>
+          <div>
+            <label style="display: block; margin-bottom: var(--size-2);">Email:</label>
+            <input type="email" name="email" defaultValue="${contact ? contact.email || '' : ''}" style="width: 100%; padding: var(--size-2); border: 1px solid var(--gray-4); border-radius: var(--radius-2);"/>
+          </div>
+          <div>
+            <label style="display: block; margin-bottom: var(--size-2);">Phone:</label>
+            <input type="tel" name="phone" defaultValue="${contact ? contact.phone || '' : ''}" style="width: 100%; padding: var(--size-2); border: 1px solid var(--gray-4); border-radius: var(--radius-2);"/>
+          </div>
+        </form>
       </div>
-      <div>
-        <label style="display: block; margin-bottom: 0.5rem;">Contactpersoon Naam:</label>
-        <input type="text" name="contactName" defaultValue="${contact ? contact.name : ''}" style="width: 100%; padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px;" />
-      </div>
-      <div>
-        <label style="display: block; margin-bottom: 0.5rem;">Email:</label>
-        <input type="email" name="email" defaultValue="${contact ? contact.email || '' : ''}" style="width: 100%; padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px;" />
-      </div>
-      <div>
-        <label style="display: block; margin-bottom: 0.5rem;">Telefoon:</label>
-        <input type="tel" name="phone" defaultValue="${contact ? contact.phone || '' : ''}" style="width: 100%; padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px;" />
-      </div>
-    </form>`;
+    </div>`;
 }
 
-// Addresses List View
-export function AddressesList({ meta, customer, custId, addresses }: { meta: NavigationMeta; customer: Customer | null; custId: string; addresses: Address[] }) {
+// Addresses List View with OPUI CardSeries
+export function AddressesList({ meta, customer, custId, addresses }: { meta: NavigationMeta; customer: Partial<Customer> | null; custId: string; addresses: Address[] }) {
   const navState = getNavStateScript(meta);
   const actions = contextActionsHtml(meta.contextActions);
   const customerName = customer ? customer.name : custId;
@@ -311,35 +328,36 @@ export function AddressesList({ meta, customer, custId, addresses }: { meta: Nav
   if (addresses.length === 0) {
     return html`${navState}
       <div class="content-header">
-        <h2>Adressen voor ${customerName}</h2>
+        <h2>Addresses for ${customerName}</h2>
         ${actions}
       </div>
-      <p>Geen adressen gevonden voor deze klant.</p>`;
+      <p>No addresses found for this customer.</p>`;
   }
 
-  const addressItems = addresses.map(address => 
-    html`<li style="margin-bottom: 0.75rem; padding: 0.75rem; background: #f8fafc; border-radius: 6px;">
-      <div style="display: flex; justify-content: space-between; align-items: center;">
-        <span style="font-weight: 600;">${address.type}: ${address.street}</span>
+  const addressItems = addresses.map((address, index) => 
+    html`<div class="ui-card ui-outlined ui-elevated ui-tonal mb-4" style="border-color: color-mix(in srgb, var(--color-series-${(index % 4) + 1}) 25%, transparent); --_shadow-color: var(--color-series-${(index % 4) + 1}); position: relative; overflow: hidden;">
+      <div class="ui-card-bg-glow" style="background-color: var(--color-series-${(index % 4) + 1});"></div>
+      <div class="ui-content" style="position: relative; z-index: 1; padding: var(--size-3);">
+        <div style="font-weight: var(--font-weight-6); margin-bottom: var(--size-2);">${address.type || 'Address'}: ${address.street}</div>
+        <div style="font-size: var(--font-size-0); color: var(--text-muted);">
+          ${address.city}, ${address.country}
+        </div>
       </div>
-      <div style="margin-top: 0.5rem; font-size: 0.875rem; color: #64748b;">
-        ${address.city}, ${address.country}
-      </div>
-    </li>`
+    </div>`
   );
 
   return html`${navState}
     <div class="content-header">
-      <h2>Adressen voor ${customerName}</h2>
+      <h2>Addresses for ${customerName}</h2>
       ${actions}
     </div>
-    <ul style="list-style: none; padding: 0;">
+    <div style="display: grid; gap: var(--size-4);">
       ${addressItems}
-    </ul>`;
+    </div>`;
 }
 
-// Notes List View
-export function NotesList({ meta, customer, custId, notes }: { meta: NavigationMeta; customer: Customer | null; custId: string; notes: Note[] }) {
+// Notes List View with OPUI CardSeries
+export function NotesList({ meta, customer, custId, notes }: { meta: NavigationMeta; customer: Partial<Customer> | null; custId: string; notes: Note[] }) {
   const navState = getNavStateScript(meta);
   const actions = contextActionsHtml(meta.contextActions);
   const customerName = customer ? customer.name : custId;
@@ -347,31 +365,32 @@ export function NotesList({ meta, customer, custId, notes }: { meta: NavigationM
   if (notes.length === 0) {
     return html`${navState}
       <div class="content-header">
-        <h2>Notities voor ${customerName}</h2>
+        <h2>Notes for ${customerName}</h2>
         ${actions}
       </div>
-      <p>Geen notities gevonden voor deze klant.</p>`;
+      <p>No notes found for this customer.</p>`;
   }
 
-  const noteItems = notes.map(note => 
-    html`<li style="margin-bottom: 0.75rem; padding: 0.75rem; background: #f8fafc; border-radius: 6px;">
-      <div style="display: flex; justify-content: space-between; align-items: center;">
-        <span style="font-weight: 600;">${note.content}</span>
+  const noteItems = notes.map((note, index) => 
+    html`<div class="ui-card ui-outlined ui-elevated ui-tonal mb-4" style="border-color: color-mix(in srgb, var(--color-series-${(index % 4) + 1}) 25%, transparent); --_shadow-color: var(--color-series-${(index % 4) + 1}); position: relative; overflow: hidden;">
+      <div class="ui-card-bg-glow" style="background-color: var(--color-series-${(index % 4) + 1});"></div>
+      <div class="ui-content" style="position: relative; z-index: 1; padding: var(--size-3);">
+        <div style="font-weight: var(--font-weight-6); margin-bottom: var(--size-2);">${note.content}</div>
+        <div style="font-size: var(--font-size-0); color: var(--text-muted);">
+          ${note.date} | ${note.author}
+        </div>
       </div>
-      <div style="margin-top: 0.5rem; font-size: 0.875rem; color: #64748b;">
-        ${note.date} | ${note.author}
-      </div>
-    </li>`
+    </div>`
   );
 
   return html`${navState}
     <div class="content-header">
-      <h2>Notities voor ${customerName}</h2>
+      <h2>Notes for ${customerName}</h2>
       ${actions}
     </div>
-    <ul style="list-style: none; padding: 0;">
+    <div style="display: grid; gap: var(--size-4);">
       ${noteItems}
-    </ul>`;
+    </div>`;
 }
 
 // Export as object for compatibility with existing routes

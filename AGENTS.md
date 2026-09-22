@@ -3,9 +3,9 @@
 ## Codebase
 - **Framework**: Hono (ESM) with TypeScript
 - **Frontend**: HTMX v4 + Alpine.js
-- **Styling**: Inline CSS in layout template
+- **Styling**: OPUI
 - **Database**: SQLite via Node.js built-in `node:sqlite` module (Node.js 22.x+)
-- **ORM**: Drizzle ORM (used for schema definitions, but raw SQL for queries due to `node:sqlite` compatibility)
+- **ORM**: Drizzle ORM ( v1.0.0-rc4 for node:sqlite compatibility) 
 
 ## Architecture
 - `apps/portal/server.ts` - Server entry point (port 3000)
@@ -17,7 +17,7 @@
 - `apps/customers/app.ts` - Customers Hono app initialization
 - `apps/customers/routes.ts` - Customer route definitions
 - `apps/customers/views.ts` - Customer view components using `hono/html`
-- `apps/customers/data.ts` - Customer data access layer (raw SQL with `node:sqlite`)
+- `apps/customers/data.ts` - Customer data access layer (Drizzle ORM)
 - `shared/hax.ts` - Shared utilities (renderSmart)
 - `shared/layout.ts` - Central layout with Alpine store for navigation state
 - `db/database.ts` - Database connection using `node:sqlite`
@@ -32,7 +32,7 @@
 - **Component-based**: Views use `hono/html` for clean Alpine template rendering
 
 ## HTML Concatenation with hono/html
-**Option 3** (Joining an Array of HTML parts) is used throughout the codebase:
+Joining an Array of HTML parts) is used throughout the codebase:
 ```typescript
 import { html } from 'hono/html';
 const items = [
@@ -44,13 +44,6 @@ const list = html`<ul>${items}</ul>`;
 ```
 
 This approach prevents double-escaping that would occur with `.join('')`.
-
-## Database (SQLite with node:sqlite)
-- **Engine**: Node.js 22.x built-in `node:sqlite` module (no installation needed)
-- **Database file**: `db/hax-portal.db`
-- **Tables**: customers, contacts, addresses, notes, portal_apps
-- **Important**: Drizzle ORM is used for schema definitions, but **raw SQL queries** are used in the data layer because `node:sqlite` has compatibility issues with Drizzle's query builder (specifically, `node:sqlite` Statement objects don't have a `raw()` method that Drizzle expects)
-- **Seeding**: Run `pnpm run seed` to create tables and insert sample data
 
 ## TypeScript Configuration
 - **Compiler**: TypeScript with `tsx` runtime
@@ -72,23 +65,7 @@ This approach prevents double-escaping that would occur with `.join('')`.
 
 ## Special Features & Discoveries
 
-### 1. Node.js 22.x Built-in SQLite (`node:sqlite`)
-**Discovery**: Node.js 22.x includes a built-in `node:sqlite` module that works on Termux!
-- **No installation needed** - Available in Node.js 22.x core
-- **Mostly API-compatible** with `better-sqlite3` - BUT has some differences:
-  - Statement objects don't have a `raw()` method (required by Drizzle ORM's better-sqlite3 adapter)
-  - Returns rows as null-prototype objects (`Object.create(null)`)
-- **Works on Termux** - Confirmed working on Android/Termux environment
-- **Workaround**: Use raw SQL queries instead of Drizzle ORM's query builder for data access
-- **Usage**:
-  ```typescript
-  import { DatabaseSync } from 'node:sqlite';
-  const db = new DatabaseSync('database.db');
-  const stmt = db.prepare('SELECT * FROM table');
-  const rows = stmt.all();
-  ```
-
-### 2. Hono html with Alpine.js Directives
+### 1. Hono html with Alpine.js Directives
 **Discovery**: `hono/html` tagged templates preserve Alpine.js directives as HTML attributes and do NOT escape content
 - **Template syntax**: Use `x-key` instead of `:key` for Alpine.js templates
 - **Class binding**: Use `x-bind:class` instead of `:class`
@@ -137,3 +114,50 @@ pnpm run typecheck
 - **File paths**: Use forward slashes (`/`) in module paths
 - **Database location**: SQLite database file is created at `db/hax-portal.db`
 - **Path handling**: Use `import { join, dirname } from 'node:path'` and `import { fileURLToPath } from 'node:url'` to get absolute paths for database files.
+
+- **Data access**: Use raw SQL in the data layer (see `apps/customers/data.ts`)
+
+## Scripts
+```bash
+# Install dependencies
+pnpm install
+
+# Seed the database (creates tables and inserts sample data)
+pnpm run seed
+
+# Start the portal server
+pnpm run dev
+
+# Start the customers app standalone
+pnpm run dev:cust
+
+# Run TypeScript type check
+pnpm run typecheck
+```
+
+## Termux-Specific Notes
+- **node:sqlite works** - No need for better-sqlite3 native compilation
+- **No build step** - Uses `tsx` for direct TypeScript execution
+- **File paths**: Use forward slashes (`/`) in module paths
+- **Database location**: SQLite database file is created at `db/hax-portal.db`
+- **Path handling**: Use `import { join, dirname } from 'node:path'` and `import { fileURLToPath } from 'node:url'` to get absolute paths for database files.
+
+on
+- **File paths**: Use forward slashes (`/`) in module paths
+- **Database location**: SQLite database file is created at `db/hax-portal.db`
+- **Path handling**: Use `import { join, dirname } from 'node:path'` and `import { fileURLToPath } from 'node:url'` to get absolute paths for database files.
+
+s**: Use forward slashes (`/`) in module paths
+- **Database location**: SQLite database file is created at `db/hax-portal.db`
+- **Path handling**: Use `import { join, dirname } from 'node:path'` and `import { fileURLToPath } from 'node:url'` to get absolute paths for database files.
+
+.
+
+e files.
+
+.
+abase files.
+'` to get absolute paths for database files.
+les.
+or database files.
+

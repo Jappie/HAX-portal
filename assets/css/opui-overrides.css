@@ -1,0 +1,55 @@
+/* Bridge: ThemeMenu Tokens -> OPUI Components */
+body {
+    /* Map dynamic menu choices to OPUI's internal layout tokens */
+    --_card-border-width: var(--border-width);
+    --_card-border-color: var(--border-color);
+    --_border-width: var(--border-width);
+    --_border-color: var(--border-color);
+}
+
+/* Generalize 'outlined' variants for all UI components */
+[class*="ui-"].ui-outlined {
+    --_card-border-width: var(--border-width);
+    --_border-width: var(--border-width);
+    --_card-border-color: var(--os-outline-color);
+    --_outlined-border-color: var(--os-outline-color);
+    border: var(--os-border);
+}
+
+/* Implement ui-elevated for ui-button (Task f) */
+.ui-button.ui-elevated {
+    box-shadow: var(--shadow-3);
+}
+
+/* Implement Glow Effect for ui-glow (Task g) */
+/* Using shadow-color strategy for a glow effect */
+.ui-glow {
+    --_shadow-color: var(--os-accent);
+    box-shadow: var(--shadow-3), 0 0 10px -4px color-mix(in srgb, var(--_shadow-color) 60%, transparent);
+}
+
+/* Specific Glow for CardSeries */
+.ui-card-bg-glow {
+    position: absolute;
+    inset: 0;
+    opacity: 0.1;
+    filter: blur(40px);
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* Implement ui-primary for all opui-components with ui-tonal (Task i) */
+[class*="ui-"].ui-tonal.ui-primary {
+    background: color-mix(in srgb, var(--primary) 15%, transparent);
+    color: var(--primary);
+}
+
+.ui-indicator-dot {
+    width: var(--size-2);
+    height: var(--size-2);
+    border-radius: var(--radius-round);
+}
+.series-1 { background-color: var(--color-series-1); }
+.series-2 { background-color: var(--color-series-2); }
+.series-3 { background-color: var(--color-series-3); }
+.series-4 { background-color: var(--color-series-4); }

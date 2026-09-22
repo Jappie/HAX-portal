@@ -11,7 +11,7 @@ export function MainAside() {
         x-bind:hx-push-url="app.path"
         x-bind:class="{ 'active': $store.navigation.currentPath.startsWith(app.path) }"
         x-text="app.label"
-      >
+      ></button>
     </template>
   </aside>`;
 }
