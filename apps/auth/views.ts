@@ -1,6 +1,6 @@
 // Auth Views - HTML templates for user, role, and permission management
 
-import { html, raw } from 'hono/html';
+import { html } from 'hono/html';
 
 interface BreadcrumbItem {
   label: string;
@@ -36,7 +36,7 @@ interface ViewProps {
   meta: NavigationMeta;
 }
 
-// Helper to generate navigation state script
+// Helper to generate navigation state as JSON script tag
 function getNavStateScript(meta: NavigationMeta) {
   const stateJson = JSON.stringify({
     currentPath: meta.currentPath,
@@ -45,11 +45,7 @@ function getNavStateScript(meta: NavigationMeta) {
     contextActions: meta.contextActions
   });
   
-  return raw(`<div 
-    x-init="$store.navigation.setState(JSON.parse($el.dataset.state))"
-    data-state='${stateJson}'
-    style="display: none;"
-  ></div>`, []);
+  return html`<script type="application/json" id="nav-state">${stateJson}</script>`;
 }
 
 // ==========================================

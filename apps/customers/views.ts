@@ -1,5 +1,5 @@
 import type { Customer, Contact, Address, Note } from './data.ts';
-import { html, raw } from 'hono/html';
+import { html } from 'hono/html';
 
 interface BreadcrumbItem {
   label: string;
@@ -31,9 +31,8 @@ interface NavigationMeta {
   contextActions: ContextAction[];
 }
 
-// Helper to generate navigation state script
+// Helper to generate navigation state as JSON script tag
 function getNavStateScript(meta: NavigationMeta) {
-  // Use JSON.stringify to create a valid JSON string
   const stateJson = JSON.stringify({
     currentPath: meta.currentPath,
     breadcrumbs: meta.breadcrumbs,
@@ -41,12 +40,7 @@ function getNavStateScript(meta: NavigationMeta) {
     contextActions: meta.contextActions
   });
   
-  // Use raw() to prevent HTML escaping of the data attribute
-  return raw(`<div 
-    x-init="$store.navigation.setState(JSON.parse($el.dataset.state))"
-    data-state='${stateJson}'
-    style="display: none;"
-  ></div>`, []);
+  return html`<script type="application/json" id="nav-state">${stateJson}</script>`;
 }
 
 // Helper for context actions
@@ -59,9 +53,7 @@ function contextActionsHtml(actions: ContextAction[]) {
         <button 
           x-bind:class="'btn ' + action.class"
           x-text="action.label"
-          x-bind:hx-get="action.path"
-          hx-target="#main-content"
-          x-bind:hx-push-url="action.path"
+          @click="$ajax(action.path, { target: 'main-content', method: 'GET' })"
           x-show="action.path"
         >
         </button>
@@ -92,9 +84,7 @@ export function CustomersList({ meta, customers }: { meta: NavigationMeta; custo
         <div style="margin-top: var(--size-3);">
           <button 
             class="btn btn-secondary" 
-            hx-get="/Customers/${customer.id}" 
-            hx-target="#main-content" 
-            hx-push-url="/Customers/${customer.id}"
+            @click="$ajax('/Customers/${customer.id}', { target: 'main-content', method: 'GET' })"
           >
             View Details
           </button>
@@ -155,25 +145,19 @@ export function CustomerDetail({ meta, customer, custId }: { meta: NavigationMet
       <div style="display: flex; gap: var(--size-2); flex-wrap: wrap;">
         <button 
           class="btn btn-secondary" 
-          hx-get="/Customers/${custId}/Contact" 
-          hx-target="#main-content" 
-          hx-push-url="/Customers/${custId}/Contact"
+          @click="$ajax('/Customers/${custId}/Contact', { target: 'main-content', method: 'GET' })"
         >
           View Contacts
         </button>
         <button 
           class="btn btn-secondary" 
-          hx-get="/Customers/${custId}/Address" 
-          hx-target="#main-content" 
-          hx-push-url="/Customers/${custId}/Address"
+          @click="$ajax('/Customers/${custId}/Address', { target: 'main-content', method: 'GET' })"
         >
           View Addresses
         </button>
         <button 
           class="btn btn-secondary" 
-          hx-get="/Customers/${custId}/Notes" 
-          hx-target="#main-content" 
-          hx-push-url="/Customers/${custId}/Notes"
+          @click="$ajax('/Customers/${custId}/Notes', { target: 'main-content', method: 'GET' })"
         >
           View Notes
         </button>
@@ -209,17 +193,13 @@ export function ContactsList({ meta, customer, custId, contacts }: { meta: Navig
         <div style="margin-top: var(--size-3); display: flex; gap: var(--size-2);">
           <button 
             class="btn btn-secondary" 
-            hx-get="/Customers/${custId}/Contact/${contact.id}" 
-            hx-target="#main-content" 
-            hx-push-url="/Customers/${custId}/Contact/${contact.id}"
+            @click="$ajax('/Customers/${custId}/Contact/${contact.id}', { target: 'main-content', method: 'GET' })"
           >
             View
           </button>
           <button 
             class="btn btn-primary" 
-            hx-get="/Customers/${custId}/Contact/${contact.id}/edit" 
-            hx-target="#main-content" 
-            hx-push-url="false"
+            @click="$ajax('/Customers/${custId}/Contact/${contact.id}/edit', { target: 'main-content', method: 'GET', push: false })"
           >
             Edit
           </button>

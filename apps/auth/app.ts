@@ -2,7 +2,7 @@
 // This app provides authentication routes and admin screens
 
 import { Hono } from 'hono';
-import { html, raw } from 'hono/html';
+import { html } from 'hono/html';
 import { renderSmart } from '../../shared/hax.ts';
 import { sessionMiddleware } from '../../shared/auth.ts';
 import authRoutes from './routes.ts';
@@ -25,10 +25,7 @@ app.notFound((c: Context) => {
     contextActions: []
   };
   const stateJson = JSON.stringify(meta);
-  const navState = raw(`<div 
-    x-init="$store.navigation.setState(JSON.parse($el.dataset.state))"
-    data-state='${stateJson}'
-    style="display: none;"></div>`, []);
+  const navState = html`<script type="application/json" id="nav-state">${stateJson}</script>`;
   const content = html`${navState}
     <h2>404 - Auth Page Not Found</h2>
     <p>The auth page "${c.req.path}" does not exist.</p>
@@ -45,10 +42,7 @@ app.onError((err: Error, c: Context) => {
     contextActions: []
   };
   const stateJson = JSON.stringify(meta);
-  const navState = raw(`<div 
-    x-init="$store.navigation.setState(JSON.parse($el.dataset.state))"
-    data-state='${stateJson}'
-    style="display: none;"></div>`, []);
+  const navState = html`<script type="application/json" id="nav-state">${stateJson}</script>`;
   const content = html`${navState}
     <h2>Error</h2>
     <p>${err.message}</p>

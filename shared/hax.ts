@@ -3,16 +3,16 @@
 import { renderLayout } from './layout.ts';
 import type { Context } from 'hono';
 
-// Global Render Helper (Full Page vs HTMX Partial Switch)
+// Global Render Helper (Full Page vs Alpine AJAX Partial Switch)
 export const renderSmart = function(c: Context, viewHtml: unknown) {
-  const isHx = c.req.header('HX-Request-Type') == 'partial';
+  const isAjax = c.req.header('X-Alpine-Request') === 'true';
   
-  if (isHx) {
-    return c.html(viewHtml);
+  if (isAjax) {
+    return c.html(viewHtml as string);
   }
   
   // For full page, wrap in layout
-  return c.html(renderLayout({ content: viewHtml }));
+  return c.html(renderLayout({ content: viewHtml as string }));
 };
 
 // Make available globally

@@ -8,10 +8,7 @@ export function SubAside() {
       <template x-for="item in $store.navigation.subAside.items" x-key="item.path">
         <li>
           <button 
-            x-bind:hx-get="item.path" 
-            hx-target="#main-content" 
-            hx-swap="innerHTML" 
-            x-bind:hx-push-url="item.path"
+            @click="$ajax(item.path, { target: 'main-content', method: 'GET' })"
             x-bind:class="{ 'active': item.active }"
             x-text="item.label"
           ></button>

@@ -1,4 +1,4 @@
-import { html, raw } from 'hono/html';
+import { html } from 'hono/html';
 
 interface BreadcrumbItem {
   label: string;
@@ -34,9 +34,8 @@ interface ViewProps {
   meta: NavigationMeta;
 }
 
-// Helper to generate navigation state script
+// Helper to generate navigation state as JSON script tag
 function getNavStateScript(meta: NavigationMeta) {
-  // Use JSON.stringify to create a valid JSON string
   const stateJson = JSON.stringify({
     currentPath: meta.currentPath,
     breadcrumbs: meta.breadcrumbs,
@@ -44,12 +43,7 @@ function getNavStateScript(meta: NavigationMeta) {
     contextActions: meta.contextActions
   });
   
-  // Use raw() to prevent HTML escaping of the data attribute
-  return raw(`<div 
-    x-init="$store.navigation.setState(JSON.parse($el.dataset.state))"
-    data-state='${stateJson}'
-    style="display: none;"
-  ></div>`, []);
+  return html`<script type="application/json" id="nav-state">${stateJson}</script>`;
 }
 
 export const portalViews = {
@@ -76,9 +70,7 @@ export const portalViews = {
         <p>This diagram is generated dynamically from the active ABAC configuration in the database and rendered fully client-side via Mermaid.js.</p>
         
         <div id="diagram-container" 
-             hx-get="/portal/architecture.mermaid" 
-             hx-trigger="load" 
-             hx-target="#mermaid-target"
+             x-init="$ajax('/portal/architecture.mermaid', { target: 'mermaid-target', method: 'GET' })"
              style="margin-top: var(--size-4); background: var(--surface-1); padding: var(--size-4); border-radius: var(--radius-2);">
           
           <div id="mermaid-target" class="mermaid" style="display: flex; justify-content: center; overflow-x: auto;">

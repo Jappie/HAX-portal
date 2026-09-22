@@ -1,7 +1,7 @@
 import { db } from '../../db/database.ts';
 import { portalApps } from '../../db/schema.ts';
 
-interface AppInfo {
+export interface AppInfo {
   name: string;
   fullname: string;
   category: string;

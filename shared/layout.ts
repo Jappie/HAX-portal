@@ -27,10 +27,9 @@ export function renderLayout({ title = 'Enterprise Portal', content = '' }) {
     <link rel="stylesheet" href="/assets/css/layout.css"/>
     <link rel="stylesheet" href="/assets/css/style.css"/>
     
-    <!-- HTMX v4 & Alpine.js -->
-      <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
-      <script defer src="https://cdn.jsdelivr.net/npm/htmx.org@4.x.x/dist/htmx.min.js"></script>
-      <script defer src="https://cdn.jsdelivr.net/npm/htmx.org@4.x.x/dist/ext/hx-alpine-compat.js"></script>
+    <!-- Alpine AJAX & Alpine.js -->
+    <script src="/assets/js/alpine-ajax.patched.min.js"></script>
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
     
     <!-- Navigation Store -->
     <script>
@@ -54,18 +53,18 @@ export function renderLayout({ title = 'Enterprise Portal', content = '' }) {
             }
           },
 
-          setState(meta) {
-            if (meta.currentPath) this.currentPath = meta.currentPath;
-            if (meta.breadcrumbs) this.breadcrumbs = meta.breadcrumbs;
-            if (meta.subAside) this.subAside = meta.subAside;
-            if (meta.contextActions) this.contextActions = meta.contextActions;
-            if (typeof htmx !== 'undefined') {
-              setTimeout(() => {
-                ['.breadcrumbs', '.sub-aside', '.main-aside', '.actions'].forEach(selector => {
-                  const el = document.querySelector(selector);
-                  if (el) htmx.process(el);
-                });
-              }, 0);
+          load() {
+            const script = document.getElementById('nav-state');
+            if (script) {
+              try {
+                const state = JSON.parse(script.textContent || '{}');
+                if (state.currentPath) this.currentPath = state.currentPath;
+                if (state.breadcrumbs) this.breadcrumbs = state.breadcrumbs;
+                if (state.subAside) this.subAside = state.subAside;
+                if (state.contextActions) this.contextActions = state.contextActions;
+              } catch (e) {
+                console.error('Failed to parse nav-state', e);
+              }
             }
           }
         });
@@ -97,16 +96,23 @@ export function renderLayout({ title = 'Enterprise Portal', content = '' }) {
             this.session = null;
           }
         });
+
+        // Load navigation state on initial load and after AJAX requests
+        document.addEventListener('DOMContentLoaded', () => {
+          Alpine.store('navigation').load();
+        });
+        window.addEventListener('ajax:after', () => {
+          Alpine.store('navigation').load();
+        });
       });
     </script>
     <script src="/assets/js/ThemeMenu.assets.js"></script>
   </head>
   <body 
     x-data 
-    x-init="$store.os.init(); $store.navigation.loadMenu(); $store.auth.init(); setTimeout(() => $store.navigation.setState($store.navigation), 100);"
+    x-init="$store.os.init(); $store.navigation.loadMenu(); $store.auth.init()"
     x-bind:class="($store.os.darkMode ? 'ui-dark' : 'ui-light') + ' ui-palette'"
     x-bind:style="$store.os.getStyles()"
-    hx-ext="alpine-compat"
   >
     <header>
       <h1>Enterprise Portal</h1>
@@ -140,7 +146,7 @@ export function renderLayout({ title = 'Enterprise Portal', content = '' }) {
     <nav class="mobile-nav" x-data>
       <div class="nav-buttons">
         <template x-for="app in $store.navigation.mainApps" x-key="app.id">
-          <button x-bind:hx-get="app.path" hx-target="#main-content" hx-swap="innerHTML" x-bind:hx-push-url="app.path" x-bind:class="{ 'active': $store.navigation.currentPath.startsWith(app.path) }" x-text="app.label"></button>
+          <button @click="$ajax(app.path, { target: 'main-content', method: 'GET' })" x-bind:class="{ 'active': $store.navigation.currentPath.startsWith(app.path) }" x-text="app.label"></button>
         </template>
       </div>
     </nav>
@@ -150,16 +156,21 @@ export function renderLayout({ title = 'Enterprise Portal', content = '' }) {
     <script>
       mermaid.initialize({ startOnLoad: false, theme: 'neutral' });
       
-      document.body.addEventListener('htmx:afterSwap', function(evt) {
-        if (evt.detail.target.id === 'mermaid-target') {
-          // If the swap was specifically for the Mermaid target, render it
-          mermaid.run({ nodes: [evt.detail.target] });
-        } else {
-          // For full page loads or other swaps that might include mermaid blocks
-          const blocks = evt.detail.target.querySelectorAll('.mermaid');
-          if (blocks.length > 0) {
-            mermaid.run({ nodes: blocks });
-          }
+      function renderMermaidInElement(element) {
+        const blocks = element.querySelectorAll('.mermaid');
+        if (blocks.length > 0) {
+          mermaid.run({ nodes: blocks }).catch(e => console.log('Mermaid render error:', e));
+        }
+      }
+      
+      // Handle AJAX responses
+      window.addEventListener('ajax:after', function(evt) {
+        const response = evt.detail?.response;
+        if (response && response.html) {
+          // Check if the response contains mermaid blocks
+          const tempDiv = document.createElement('div');
+          tempDiv.innerHTML = response.html;
+          renderMermaidInElement(tempDiv);
         }
       });
       
