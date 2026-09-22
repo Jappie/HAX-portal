@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { html } from 'hono/html';
 import { serveStatic } from '@hono/node-server/serve-static';
-import { renderSmart } from '../../shared/hax.ts';
+import { renderSmart, navStateScript } from '../../shared/hax.ts';
 import customerRoutes from './routes.ts';
 import { authorizeAbac } from '../../shared/abacEngine.ts';
 import { sessionMiddleware, requireAuth } from '../../shared/auth.ts';
@@ -32,8 +32,7 @@ app.notFound((c: Context) => {
     subAside: { title: '', items: [] },
     contextActions: []
   };
-  const stateJson = JSON.stringify(meta);
-  const navState = html`<script type="application/json" id="nav-state">${stateJson}</script>`;
+  const navState = navStateScript(meta);
   const content = html`${navState}
     <h2>404 - Customer Page Not Found</h2>
     <p>The customer page "${c.req.path}" does not exist.</p>
@@ -49,8 +48,7 @@ app.onError((err: Error, c: Context) => {
     subAside: { title: '', items: [] },
     contextActions: []
   };
-  const stateJson = JSON.stringify(meta);
-  const navState = html`<script type="application/json" id="nav-state">${stateJson}</script>`;
+  const navState = navStateScript(meta);
   const content = html`${navState}
     <h2>Error</h2>
     <p>${err.message}</p>
