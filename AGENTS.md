@@ -2,10 +2,10 @@
 
 ## Codebase
 - **Framework**: Hono (ESM) with TypeScript
-- **Frontend**: HTMX v4 + Alpine.js
+- **Frontend**: Alpine.js + Alpine AJAX (single runtime, no HTMX)
 - **Styling**: OPUI
 - **Database**: SQLite via Node.js built-in `node:sqlite` module (Node.js 22.x+)
-- **ORM**: Drizzle ORM ( v1.0.0-rc4 for node:sqlite compatibility) 
+- **ORM**: Drizzle ORM (v1.0.0-rc4 for node:sqlite compatibility)
 
 ## Architecture
 - `apps/portal/server.ts` - Server entry point (port 3000)
@@ -17,22 +17,37 @@
 - `apps/customers/app.ts` - Customers Hono app initialization
 - `apps/customers/routes.ts` - Customer route definitions
 - `apps/customers/views.ts` - Customer view components using `hono/html`
-- `apps/customers/data.ts` - Customer data access layer (Drizzle ORM)
+- `apps/customers/data.ts` - Customer data access layer (raw SQL with node:sqlite)
+- `apps/auth/server.ts` - Auth app server (port 3002)
+- `apps/auth/app.ts` - Auth Hono app initialization
+- `apps/auth/routes.ts` - Auth route definitions
+- `apps/auth/views.ts` - Auth view components
 - `shared/hax.ts` - Shared utilities (renderSmart)
 - `shared/layout.ts` - Central layout with Alpine store for navigation state
+- `shared/opui/Button.ts` - Reusable button component with Alpine AJAX support
+- `shared/opui/` - OPUI component library
+- `shared/components/Breadcrumbs.ts` - Breadcrumb navigation component
+- `shared/components/MainAside.ts` - Main navigation sidebar component
+- `shared/components/SubAside.ts` - Sub-navigation sidebar component
+- `shared/components/ThemeMenu.ts` - Theme selection component
+- `shared/auth.ts` - Authentication utilities
+- `shared/abacEngine.ts` - Attribute-Based Access Control engine
+- `shared/blueprint.ts` - Blueprint generation utilities
 - `db/database.ts` - Database connection using `node:sqlite`
 - `db/schema.ts` - Drizzle ORM schema definitions
 - `db/seed.ts` - Database seeding script
+- `db/auth.ts` - Auth database utilities
 
 ## Key Patterns
-- **Smart rendering**: `renderSmart(c, viewHtml)` detects `HX-Request-Type: partial` to return partial vs full page
-- **Central navigation store**: Alpine.js store (`$store.navigation`) in layout, updated via `x-init` with JSON from routes
-- **HTMX attributes**: All navigation uses `hx-get`, `hx-target="#main-content"`, `hx-swap="innerHTML"`
+- **Smart rendering**: `renderSmart(c, viewHtml)` detects `X-Alpine-Request: true` header to return partial vs full page
+- **Central navigation store**: Alpine.js store (`$store.navigation`) in layout, loaded from `<script type="application/json" id="nav-state">` on DOMContentLoaded and ajax:after events
+- **Alpine AJAX navigation**: All navigation uses `@click="$ajax(path, { target: 'main-content', method: 'GET' })"` pattern
 - **Separated concerns**: Each app has server.ts, app.ts, routes.ts, views.ts, data.ts
 - **Component-based**: Views use `hono/html` for clean Alpine template rendering
+- **JSON state transport**: Navigation state is safely transported via `<script type="application/json">` tag (no attribute parsing)
 
 ## HTML Concatenation with hono/html
-Joining an Array of HTML parts) is used throughout the codebase:
+Arrays of HTML parts are used throughout the codebase:
 ```typescript
 import { html } from 'hono/html';
 const items = [
@@ -51,17 +66,22 @@ This approach prevents double-escaping that would occur with `.join('')`.
 - **Type checking**: Run `pnpm run typecheck`
 
 ## Constraints
-- Use `HX-Request-Type == 'partial'` to detect HTMX partial requests
-- Navigation metadata (breadcrumbs, subAside, contextActions) is JSON-stringified into `data-state` attribute on a hidden div, parsed by Alpine's `x-init`
+- Use `X-Alpine-Request == 'true'` to detect Alpine AJAX partial requests (sent automatically by Alpine AJAX)
+- Navigation metadata (breadcrumbs, subAside, contextActions) is JSON-stringified into `<script type="application/json" id="nav-state">` tag, loaded by Alpine store on DOMContentLoaded and ajax:after
 - No separate API endpoints; state is embedded in HTML responses
-- Both portal and customers apps have 404 and error handlers to reset navigation state
-- **HTMX attribute expressions**: Avoid using JavaScript expressions in HTMX attributes that reference Alpine template variables. These get evaluated on the server where the variables don't exist. Use simple path references instead.
+- All apps have 404 and error handlers that output empty or reset navigation state
+- **Alpine AJAX usage**: Use `@click="$ajax('/path', { target: 'main-content', method: 'GET' })"` for navigation buttons
+- **Button elements**: Keep `<button>` elements (not `<a>` tags) with `@click` handlers for Alpine AJAX
 
-## HTMX + Alpine Integration
-- Alpine dynamically re-renders breadcrumbs/subAside/mainAside when store updates
-- HTMX does NOT auto-process new elements added by Alpine outside the swap target
-- **Fix**: Call `htmx.process()` on these containers in `setState` after store update (implemented in layout)
-- **Important**: `hono/html` tagged templates do NOT escape their content, making them ideal for Alpine.js templates. Regular TSX does escape content, which breaks Alpine expressions containing special characters like `>`, `<`, `{`, `}`.
+## Alpine AJAX + Alpine.js Integration
+- Alpine AJAX sends `X-Alpine-Request: true` header on every request
+- `renderSmart()` detects this header to return partial HTML for AJAX requests
+- Navigation store loads state from `<script type="application/json" id="nav-state">` on:
+  - `DOMContentLoaded` - initial page load
+  - `ajax:after` - after every Alpine AJAX request completes
+- **No htmx.process() needed**: Alpine AJAX handles all DOM updates automatically
+- **No framework conflicts**: Single runtime (Alpine.js + Alpine AJAX) instead of two frameworks competing
+- **Safe JSON transport**: Special characters (apostrophes, angle brackets) in labels work correctly
 
 ## Special Features & Discoveries
 
@@ -75,15 +95,43 @@ This approach prevents double-escaping that would occur with `.join('')`.
   
   function Breadcrumbs() {
     return html`<nav x-data>
-      <template x-for="(item, index) in items" x-key="item.path">
+      <template x-for="(item, index) in $store.navigation.breadcrumbs" x-key="item.path">
         <template x-if="index > 0"><span>/</span></template>
-        <button x-text="item.label"></button>
+        <button @click="$ajax(item.path, { target: 'main-content', method: 'GET' })" x-text="item.label"></button>
       </template>
     </nav>`;
   }
   ```
 
-### 3. Drizzle ORM with node:sqlite - Limitations
+### 2. Alpine AJAX Navigation Pattern
+**Pattern**: All navigation uses buttons with `@click` handlers calling `$ajax()`:
+```html
+<button @click="$ajax('/Customers/123', { target: 'main-content', method: 'GET' })">
+  View Customer
+</button>
+```
+
+**Options**:
+- `target`: DOM element ID to swap content into (default: none, returns full page)
+- `method`: HTTP method (GET, POST, PUT, DELETE, PATCH)
+- `push`: Push to browser history (default: true)
+- `replace`: Replace browser history instead of push
+
+### 3. Shared OPUI Button Component
+**Usage**:
+```typescript
+import { Button } from '../shared/opui/Button.ts';
+
+Button({
+  label: 'View Details',
+  path: '/Customers/123',
+  target: 'main-content',
+  method: 'GET',
+  class: 'ui-btn ui-btn-sm'
+})
+```
+
+### 4. Drizzle ORM with node:sqlite - Limitations
 **Setup**: While Drizzle ORM can use the `better-sqlite3` adapter with `node:sqlite`, there are compatibility issues:
 - **Missing `raw()` method**: Drizzle's better-sqlite3 adapter expects a `raw()` method on Statement objects, which `node:sqlite` doesn't provide
 - **Workaround**: Use raw SQL queries with `sqlite.prepare()` and `stmt.all()` / `stmt.get()` instead of Drizzle's query builder
@@ -104,32 +152,8 @@ pnpm run dev
 # Start the customers app standalone
 pnpm run dev:cust
 
-# Run TypeScript type check
-pnpm run typecheck
-```
-
-## Termux-Specific Notes
-- **node:sqlite works** - No need for better-sqlite3 native compilation
-- **No build step** - Uses `tsx` for direct TypeScript execution
-- **File paths**: Use forward slashes (`/`) in module paths
-- **Database location**: SQLite database file is created at `db/hax-portal.db`
-- **Path handling**: Use `import { join, dirname } from 'node:path'` and `import { fileURLToPath } from 'node:url'` to get absolute paths for database files.
-
-- **Data access**: Use raw SQL in the data layer (see `apps/customers/data.ts`)
-
-## Scripts
-```bash
-# Install dependencies
-pnpm install
-
-# Seed the database (creates tables and inserts sample data)
-pnpm run seed
-
-# Start the portal server
-pnpm run dev
-
-# Start the customers app standalone
-pnpm run dev:cust
+# Start the auth app standalone
+pnpm run dev:auth
 
 # Run TypeScript type check
 pnpm run typecheck
@@ -141,23 +165,3 @@ pnpm run typecheck
 - **File paths**: Use forward slashes (`/`) in module paths
 - **Database location**: SQLite database file is created at `db/hax-portal.db`
 - **Path handling**: Use `import { join, dirname } from 'node:path'` and `import { fileURLToPath } from 'node:url'` to get absolute paths for database files.
-
-on
-- **File paths**: Use forward slashes (`/`) in module paths
-- **Database location**: SQLite database file is created at `db/hax-portal.db`
-- **Path handling**: Use `import { join, dirname } from 'node:path'` and `import { fileURLToPath } from 'node:url'` to get absolute paths for database files.
-
-s**: Use forward slashes (`/`) in module paths
-- **Database location**: SQLite database file is created at `db/hax-portal.db`
-- **Path handling**: Use `import { join, dirname } from 'node:path'` and `import { fileURLToPath } from 'node:url'` to get absolute paths for database files.
-
-.
-
-e files.
-
-.
-abase files.
-'` to get absolute paths for database files.
-les.
-or database files.
-
