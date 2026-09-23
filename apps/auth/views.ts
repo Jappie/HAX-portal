@@ -1,6 +1,7 @@
 // Auth Views - HTML templates for user, role, and permission management
 
 import { html } from 'hono/html';
+import { navStateScript } from '../../shared/hax.ts';
 
 interface BreadcrumbItem {
   label: string;
@@ -38,14 +39,7 @@ interface ViewProps {
 
 // Helper to generate navigation state as JSON script tag
 function getNavStateScript(meta: NavigationMeta) {
-  const stateJson = JSON.stringify({
-    currentPath: meta.currentPath,
-    breadcrumbs: meta.breadcrumbs,
-    subAside: meta.subAside,
-    contextActions: meta.contextActions
-  });
-  
-  return html`<script type="application/json" id="nav-state">${stateJson}</script>`;
+  return navStateScript(meta);
 }
 
 // ==========================================

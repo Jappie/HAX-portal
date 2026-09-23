@@ -80,7 +80,7 @@ routes.get('/api/auth/status', async (c: Context) => {
 });
 
 // Menu endpoint
-routes.get('/api/menu', () => {
+routes.get('/api/menu', (c: Context) => {
   // We'd map this dynamically from the global apps array
   // The global app list is stored in globalThis.mainApps
   const mainApps = (globalThis as { mainApps?: Record<string, unknown>[] }).mainApps || [];
