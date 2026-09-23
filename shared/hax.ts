@@ -26,7 +26,21 @@ export const renderSmart = function(c: Context, viewHtml: unknown) {
   const isAjax = c.req.header('X-Alpine-Request') === 'true';
   
   if (isAjax) {
-    return c.html(viewHtml as string);
+    // alpine-ajax announces every requested target in the X-Alpine-Target
+    // header as a space-separated list; tokens may be "local:response"
+    // alias pairs and the response must contain an element for each
+    // response-side id, or the library removes that target element from the
+    // document (ajax:missing). _top, _none and _self resolve to the document
+    // itself and need no wrapper.
+    const ids = (c.req.header('X-Alpine-Target') || 'main-content')
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean)
+      .map((token) => token.split(':')[1] || token)
+      .filter((id) => !id.startsWith('_'));
+    const targetIds = [...new Set(ids.length ? ids : ['main-content'])];
+    const content = (viewHtml as string).toString();
+    return c.html(raw(targetIds.map((id) => `<div id="${id}">${content}</div>`).join('')));
   }
   
   // For full page, wrap in layout
