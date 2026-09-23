@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { renderSmart } from '../../shared/hax.ts';
+import { raw } from 'hono/html';
 import { portalViews } from './views.ts';
 import { db } from '../../db/database.ts';
 import { appPermissions } from '../../db/schema.ts';
@@ -43,7 +44,7 @@ routes.get('/portal/architecture', (c: Context) => {
   return renderSmart(c, content);
 });
 
-// Mermaid text output endpoint
+// Mermaid ER diagram endpoint
 routes.get('/portal/architecture.mermaid', async (c: Context) => {
   const records = await db.select().from(appPermissions).all();
   
@@ -63,7 +64,10 @@ routes.get('/portal/architecture.mermaid', async (c: Context) => {
   
   mermaidText += '    }\n';
 
-  return c.text(mermaidText);
+  // The diagram root itself carries the id alpine-ajax swaps in, so no
+  // wrapper is needed: the element requested via X-Alpine-Target is present.
+  const diagram = `<div id="mermaid-target" class="mermaid" style="display: flex; justify-content: center; overflow-x: auto;">${mermaidText}</div>`;
+  return c.html(raw(diagram));
 });
 
 // Auth status endpoint
