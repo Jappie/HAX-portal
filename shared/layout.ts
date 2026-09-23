@@ -158,30 +158,24 @@ export function renderLayout({ title = 'Enterprise Portal', content = '' }) {
       mermaid.initialize({ startOnLoad: false, theme: 'neutral' });
       
       function renderMermaidInElement(element) {
-        const blocks = element.querySelectorAll('.mermaid');
+        // The swapped element may itself be a mermaid block, or contain them
+        const blocks = element.matches('.mermaid')
+          ? [element]
+          : Array.from(element.querySelectorAll('.mermaid'));
         if (blocks.length > 0) {
           mermaid.run({ nodes: blocks }).catch(e => console.log('Mermaid render error:', e));
         }
       }
       
-      // Handle AJAX responses
+      // Render the elements alpine-ajax actually swapped into the document
       window.addEventListener('ajax:after', function(evt) {
-        const response = evt.detail?.response;
-        if (response && response.html) {
-          // Check if the response contains mermaid blocks
-          const tempDiv = document.createElement('div');
-          tempDiv.innerHTML = response.html;
-          renderMermaidInElement(tempDiv);
+        const rendered = evt.detail?.render;
+        if (Array.isArray(rendered) && rendered.length > 0) {
+          rendered.forEach(el => {
+            if (el && el.isConnected) renderMermaidInElement(el);
+          });
         }
       });
-      
-      // Initial run
-      setTimeout(() => {
-        const blocks = document.querySelectorAll('.mermaid');
-        if (blocks.length > 0 && blocks[0].textContent.trim().length > 0) {
-          mermaid.run({ nodes: blocks }).catch(e => console.log('Mermaid init skip:', e));
-        }
-      }, 500);
     </script>
   </body>
   </html>
