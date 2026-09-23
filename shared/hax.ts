@@ -8,7 +8,7 @@ export interface NavState {
   currentPath: string;
   breadcrumbs: Array<{ label: string; path: string }>;
   subAside: { title: string; items: Array<{ label: string; path: string; active?: boolean }> };
-  contextActions: Array<Record<string, unknown>>;
+  contextActions: object[];
 }
 
 // Navigation state as JSON script tag. A <script> element is raw-text, so

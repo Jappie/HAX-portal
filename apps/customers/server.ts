@@ -2,8 +2,12 @@
 // This file is for standalone execution (if needed)
 import { serve } from '@hono/node-server';
 import app from './app.ts';
+import { abacCache } from '../../shared/abacEngine.ts';
 
 const port = 3001;
-console.log(`Customers app running on http://localhost:${port}`);
 
+// Initialize the ABAC permissions cache (the mounted portal does this in its server)
+await abacCache.reload();
+
+console.log(`Customers app running on http://localhost:${port}`);
 serve({ fetch: app.fetch, port });

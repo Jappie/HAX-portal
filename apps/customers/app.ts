@@ -4,13 +4,20 @@ import { serveStatic } from '@hono/node-server/serve-static';
 import { renderSmart, navStateScript } from '../../shared/hax.ts';
 import customerRoutes from './routes.ts';
 import { authorizeAbac } from '../../shared/abacEngine.ts';
-import { sessionMiddleware, requireAuth } from '../../shared/auth.ts';
+import { sessionMiddleware, requireAuth, handleLogin, handleLogout } from '../../shared/auth.ts';
 import type { Context } from 'hono';
 
 const app = new Hono();
 
 // Serve static assets from /assets directory
 app.use('/assets/*', serveStatic({ root: './' }));
+
+// Login/logout so the standalone server can authenticate
+// (requireAuth redirects unauthenticated requests to /login)
+app.get('/login', handleLogin);
+app.post('/login', handleLogin);
+app.get('/logout', handleLogout);
+app.post('/logout', handleLogout);
 
 // Apply session middleware
 app.use('*', sessionMiddleware);
