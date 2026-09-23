@@ -1,24 +1,25 @@
 document.addEventListener('alpine:init', () => {
-    // Helper function to safely read and parse localStorage data
-    function loadFromStorage() {
-        try {
-            const local = localStorage.getItem('os-theme');
-            return local ? JSON.parse(local) : null;
-        } catch (e) {
-            console.error('Failed to parse localStorage:', e);
-            return null;
+    // Migrate the old single-blob "os-theme" key to the per-setting keys used
+    // by $persist; runs once before the store registers.
+    try {
+        const blob = JSON.parse(localStorage.getItem('os-theme')) || {};
+        if (typeof blob === 'object' && blob !== null && !Array.isArray(blob)) {
+            if (blob.theme !== undefined && localStorage.getItem('os-palette') === null) localStorage.setItem('os-palette', JSON.stringify(blob.palette ?? 'hard'));
+            if (blob.accent !== undefined && localStorage.getItem('os-accent') === null) localStorage.setItem('os-accent', JSON.stringify(blob.accent));
+            if (blob.darkMode !== undefined && localStorage.getItem('os-darkMode') === null) localStorage.setItem('os-darkMode', JSON.stringify(blob.darkMode));
+            if (blob.theme !== undefined && typeof blob.theme === 'string') localStorage.setItem('os-theme', JSON.stringify(blob.theme));
+            else if (blob.theme !== undefined) localStorage.removeItem('os-theme');
         }
+    } catch (e) {
+        try { localStorage.removeItem('os-theme'); } catch (e2) {}
     }
-
-    // Fetch initial state data synchronously before registering the store
-    let savedData = loadFromStorage();
 
     Alpine.store('os', {
         menuOpen: false,
-        theme: savedData?.theme || 'ios',
-        palette: savedData?.palette || 'hard', 
-        accentIndex: savedData?.accent !== undefined ? savedData.accent : 2, // Defaults to 2 (Orange)
-        darkMode: savedData?.darkMode !== undefined ? savedData.darkMode : false,
+        theme: Alpine.$persist('ios').as('os-theme'),
+        palette: Alpine.$persist('hard').as('os-palette'),
+        accentIndex: Alpine.$persist(2).as('os-accent'),
+        darkMode: Alpine.$persist(false).as('os-darkMode'),
         
         get colors() {
             return [1, 2, 3, 4, 5, 6, 7, 8];
@@ -28,37 +29,9 @@ document.addEventListener('alpine:init', () => {
             // Apply variables directly to :root during startup
             this.updateRootPalette();
             
-            // Watch store state changes and save automatically via reactive effects
+            // Re-apply when persisted settings change
             Alpine.effect(() => {
                 this.updateRootPalette();
-                try {
-                    const data = {
-                        theme: this.theme,
-                        palette: this.palette,
-                        accent: this.accentIndex,
-                        darkMode: this.darkMode
-                    };
-                    localStorage.setItem('os-theme', JSON.stringify(data));
-                } catch (e) {
-                    console.error('Failed to save theme:', e);
-                }
-            });
-
-            // Centralized function to synchronize the active store state with localStorage changes
-            const syncStoreWithStorage = () => {
-                const freshData = loadFromStorage();
-                if (freshData) {
-                    if (freshData.theme !== undefined && freshData.theme !== this.theme) this.theme = freshData.theme;
-                    if (freshData.palette !== undefined && freshData.palette !== this.palette) this.palette = freshData.palette;
-                    if (freshData.accent !== undefined && freshData.accent !== this.accentIndex) this.accentIndex = freshData.accent;
-                    if (freshData.darkMode !== undefined && freshData.darkMode !== this.darkMode) this.darkMode = freshData.darkMode;
-                    this.updateRootPalette();
-                }
-            };
-
-            // Triggers when returning from standard anchor links or mobile page history (bfcache)
-            window.addEventListener('pageshow', (event) => {
-                syncStoreWithStorage();
             });
         },
 
