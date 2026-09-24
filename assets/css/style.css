@@ -1,128 +1,296 @@
-html, body {
-    height: 100%;
-    margin: 0;
-    padding: 0;
-    overflow: hidden;
-}
-
-body {
-    font-family: var(--os-font, var(--font-sans));
-    font-size: var(--font-size-base, inherit);
-    
-    /* Re-bind core semantic tokens so they pick up dynamic --palette-source from this scope */
-    --text-primary: light-dark(var(--gray-15), var(--gray-1));
-    --text-muted: light-dark(var(--gray-13), var(--gray-4));
-    --surface-default: light-dark(var(--gray-1), var(--gray-13));
-    --surface-tonal: light-dark(var(--gray-3), var(--gray-12));
-    --surface-elevated: light-dark(var(--gray-1), var(--gray-12));
-    --border-color: light-dark(var(--gray-4), var(--gray-12));
-
-    background: var(--surface-default);
-    color: var(--text-primary);
-    line-height: var(--font-lineheight-3);
-    transition: background-color 0.3s ease, color 0.3s ease;
-    color-scheme: light;
-}
-
-body.ui-dark {
-    color-scheme: dark;
-}
-
-.mobile-layout {
+/* Base (landscape / desktop): normal document scrolling; account and theme
+   UI lives in the header dropdown. */
+header {
     display: flex;
-    flex-direction: column;
-    height: 100dvh;
-    max-width: 450px;
-    margin: 0 auto;
-    background: var(--surface-default);
-    position: relative;
-    box-shadow: var(--shadow-5);
+    align-items: center;
+    gap: var(--size-3);
+    position: sticky;
+    top: 0;
+    z-index: 1002;
 }
 
-.header { 
-    flex-shrink: 0;
-    padding: var(--size-3) var(--size-4);
-    background: var(--surface-tonal);
-    text-align: center;
-    border-bottom: var(--os-border);
-    box-shadow: var(--os-shadow);
-    z-index: 10;
-}
-
-.header h1 {
-    margin: 0;
-    font-size: var(--font-size-4);
-    font-weight: var(--font-weight-7);
-}
-
-.content {
-    flex: 1;
-    overflow-y: auto;
-    min-height: 0;
-    padding: var(--size-4);
-}
-
-.bottom-nav {
-    flex-shrink: 0;
-    background: var(--surface-tonal);
-    display: flex;
-    justify-content: space-around;
-    padding: var(--size-2) 0;
-    border-top: var(--os-border);
-    box-shadow: var(--os-shadow);
-    z-index: 1000;
-}
-
-.nav-btn {
+.account-btn,
+.app-drawer-toggle {
     background: none;
     border: none;
-    color: var(--text-muted);
-    font-size: var(--font-size-0);
-    cursor: pointer;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    transition: color 0.2s ease;
-    text-decoration: none;
-    min-width: 60px;
-    gap: var(--size-1);
-}
-
-.nav-btn.active {
-    color: var(--os-accent);
-}
-
-.nav-btn span:first-child {
+    color: inherit;
     font-size: var(--font-size-3);
-}
-
-.full { width: 100%; }
-
-/* FAB (Floating Action Button) */
-.fab {
-    position: absolute;
-    bottom: var(--size-8);
-    right: var(--size-4);
-    width: var(--size-8);
-    height: var(--size-8);
-    border-radius: var(--radius-round);
-    background: var(--os-accent);
-    color: white;
+    cursor: pointer;
+    padding: var(--size-2);
+    border-radius: var(--radius-2);
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: var(--shadow-4);
-    cursor: pointer;
+    width: var(--size-8);
+    height: var(--size-8);
+}
+
+.account-btn:hover,
+.app-drawer-toggle:hover {
+    background: var(--surface-elevated);
+}
+
+.app-drawer-toggle {
+    display: none;
+}
+
+/* Portrait-only shell pieces are hidden in base/landscape; the portrait
+   media block displays them. */
+.app-drawer,
+.app-drawer-backdrop,
+.mobile-footer {
+    display: none;
+}
+
+/* Account dropdown anchored under the header, aligned right; on phones it is
+   compact (max ~280px, anchored top-right) so it never covers the page. */
+.account-menu {
+    position: fixed;
+    top: 60px;
+    right: var(--size-4);
+    width: min(300px, calc(100vw - 2 * var(--size-4)));
+    max-height: calc(100dvh - 80px);
+    overflow-y: auto;
+    background: var(--surface-default);
+    border: var(--os-border);
+    border-radius: var(--os-radius);
+    box-shadow: var(--shadow-5);
+    z-index: 1003;
+    padding: var(--size-4);
+    display: none;
+    flex-direction: column;
+    gap: var(--size-3);
+}
+
+.account-menu.open {
+    display: flex;
+}
+
+.account-menu .account-section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--size-2);
+    border-bottom: var(--os-border);
+    padding-bottom: var(--size-3);
+}
+
+.account-menu .account-link {
     text-decoration: none;
-    z-index: 1001;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    color: var(--text-primary);
+    padding: var(--size-2) var(--size-3);
+    border-radius: var(--radius-2);
+    text-align: left;
+    background: none;
+    border: none;
+    font: inherit;
+    cursor: pointer;
 }
 
-.fab:active {
-    transform: scale(0.95);
-    box-shadow: var(--shadow-2);
+.account-menu .account-link:hover {
+    background: var(--surface-tonal);
 }
 
-.fab span {
-    font-size: var(--font-size-5);
+.account-menu .theme-section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--size-3);
+}
+
+.account-menu .theme-section h3 {
+    margin: 0;
+    font-size: var(--font-size-1);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+}
+
+/* Color grid + swatches shared with the old theme panel */
+.color-grid { display: flex; flex-wrap: wrap; gap: var(--size-2); }
+.color-swatch {
+    width: var(--size-5);
+    height: var(--size-5);
+    border-radius: var(--radius-round);
+    cursor: pointer;
+    border: 2px solid transparent;
+}
+.color-swatch.active { border-color: var(--text-primary); }
+
+.ui-select-label {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+.ui-select-title {
+    font-size: 12px;
+    font-weight: bold;
+}
+.ui-select-field {
+    width: 100%;
+}
+.accent-shade-label {
+    font-size: 12px;
+    font-weight: bold;
+    display: block;
+    margin-bottom: 5px;
+}
+
+/* Landscape / desktop: asides stick below the sticky header while main
+   scrolls with the document. */
+@media (orientation: landscape), (min-width: 769px) {
+    .layout-container {
+        align-items: flex-start;
+    }
+
+    .main-aside,
+    .sub-aside {
+        position: sticky;
+        top: 64px;
+        max-height: calc(100dvh - 64px);
+        overflow-y: auto;
+    }
+}
+
+/* Portrait app-shell (narrow AND taller than wide): the document does not
+   scroll; main becomes the scroll pane between the fixed header (title +
+   breadcrumbs) and the fixed submenu footer. */
+@media (max-width: 768px) and (orientation: portrait) {
+    html, body {
+        height: 100%;
+        overflow: hidden;
+    }
+
+    body {
+        display: flex;
+        flex-direction: column;
+        height: 100dvh;
+    }
+
+    header,
+    .breadcrumbs {
+        flex-shrink: 0;
+    }
+
+    .layout-container {
+        flex: 1;
+        min-height: 0;
+        flex-direction: column;
+    }
+
+    main {
+        flex: 1;
+        min-height: 0;
+        overflow-y: auto;
+    }
+
+    .app-drawer-toggle {
+        display: flex;
+    }
+
+    .mobile-footer {
+        display: flex;
+    }
+
+    /* Apps drawer: slide-in from the left, above the shell */
+    .app-drawer {
+        position: fixed;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        width: min(260px, 80vw);
+        background: var(--surface-default);
+        border-right: var(--os-border);
+        box-shadow: var(--shadow-5);
+        z-index: 1005;
+        padding: var(--size-4) 0;
+        display: flex;
+        flex-direction: column;
+        gap: var(--size-1);
+        transform: translateX(-100%);
+        transition: transform 0.25s ease;
+    }
+
+    .app-drawer button {
+        display: block;
+        width: 100%;
+        padding: var(--size-3) var(--size-5);
+        text-align: left;
+        background: none;
+        border: none;
+        color: var(--text-muted);
+        cursor: pointer;
+        font-size: var(--font-size-1);
+    }
+
+    .app-drawer button.active,
+    .app-drawer button:hover {
+        background: var(--surface-elevated);
+        color: var(--text-primary);
+        border-left: 4px solid var(--color-8);
+    }
+
+    .app-drawer.open {
+        transform: translateX(0);
+    }
+
+    .app-drawer-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgb(0 0 0 / 0.3);
+        z-index: 1004;
+    }
+
+    /* Submenu footer: horizontally scrollable row of items */
+    .mobile-footer {
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        gap: var(--size-2);
+        background: var(--surface-tonal);
+        border-top: 1px solid var(--gray-4);
+        padding: var(--size-2) var(--size-3);
+        overflow-x: auto;
+        white-space: nowrap;
+        z-index: 1000;
+    }
+
+    .mobile-footer .sub-aside {
+        width: 100%;
+        border: none;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        gap: var(--size-2);
+        overflow: visible;
+    }
+
+    .mobile-footer .sub-aside h3 {
+        display: none;
+    }
+
+    .mobile-footer .sub-aside ul {
+        display: flex;
+        gap: var(--size-2);
+        padding: 0;
+        margin: 0;
+    }
+
+    .mobile-footer .sub-aside li {
+        margin: 0;
+    }
+
+    .mobile-footer .sub-aside button {
+        padding: var(--size-2) var(--size-3);
+        margin: 0;
+        border-radius: var(--radius-round);
+        border: 1px solid var(--gray-4);
+        white-space: nowrap;
+    }
+
+    /* Account menu stays compact on phones */
+    .account-menu {
+        top: 56px;
+        right: var(--size-2);
+        width: min(280px, calc(100vw - 2 * var(--size-2)));
+        max-height: calc(100dvh - 120px);
+    }
 }

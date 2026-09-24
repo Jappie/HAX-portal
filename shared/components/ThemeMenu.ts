@@ -1,31 +1,10 @@
-// ThemeMenu component - same pattern as Breadcrumbs, MainAside, SubAside
+// ThemeMenu component - renders inside the account dropdown in the header
 // Uses hono/html to preserve Alpine.js directives
 
 import { html } from 'hono/html';
 
 export function ThemeMenu() {
-  return html`<div>
-    <!-- Settings Backdrop -->
-    <div 
-      x-show="$store.os.menuOpen" 
-      class="settings-backdrop" 
-      x-transition:enter-start="opacity-0" 
-      x-on:click="$store.os.menuOpen = false"
-      style="display: none"
-    ></div>
-
-    <!-- Settings Panel -->
-    <div 
-      class="settings-panel ui-card ui-outlined ui-elevated" 
-      x-show="$store.os.menuOpen" 
-      style="display: none"
-      x-transition:enter="transition ease-out duration-300" 
-      x-transition:enter-start="opacity-0 translate-y-8" 
-      x-transition:enter-end="opacity-100 translate-y-0"
-      x-transition:leave="transition ease-in duration-200"
-      x-transition:leave-start="opacity-100 translate-y-0"
-      x-transition:leave-end="opacity-0 translate-y-8"
-    >
+  return html`<div class="theme-section">
       <h3>Theme Settings</h3>
 
       <section>
@@ -73,6 +52,5 @@ export function ThemeMenu() {
       <section>
         <button x-on:click="$store.os.darkMode = !$store.os.darkMode" class="ui-button ui-full" x-text="$store.os.darkMode ? 'Switch to Light' : 'Switch to Dark'"></button>
       </section>
-    </div>
-  </div>`;
+    </div>`;
 }

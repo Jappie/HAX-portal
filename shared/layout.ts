@@ -110,21 +110,33 @@ export function renderLayout({ title = 'Enterprise Portal', content = '' }) {
     <script src="/assets/js/ThemeMenu.assets.js"></script>
   </head>
   <body 
-    x-data 
+    x-data="{ accountOpen: false, drawerOpen: false }"
     x-init="$store.os.init(); $store.navigation.loadMenu(); $store.auth.init()"
     x-bind:class="($store.os.darkMode ? 'ui-dark' : 'ui-light') + ' ui-palette'"
     x-bind:style="$store.os.getStyles()"
+    x-on:click.outside="accountOpen = false"
   >
     <header>
+      <button class="app-drawer-toggle" x-on:click="drawerOpen = !drawerOpen" aria-label="Open menu">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
       <h1>Enterprise Portal</h1>
-      <div class="auth-status" style="margin-left: auto; display: flex; gap: var(--size-4); align-items: center;" x-show="$store.navigation.currentPath !== '/login'">
-        <span x-show="$store.auth?.user" style="color: var(--text-muted);">
-          Signed in as: <strong x-text="$store.auth?.user?.username || $store.auth?.user?.email"></strong>
-          (<span x-text="$store.auth?.user?.roleId"></span>)
-        </span>
-        <a href="/login" class="ui-btn ui-btn-sm" x-show="!$store.auth?.user" style="margin-left: var(--size-2);">Sign In</a>
-        <a href="/logout" class="ui-btn ui-btn-sm ui-btn-secondary" x-show="$store.auth?.user">Sign Out</a>
-        <a href="/Auth" class="ui-btn ui-btn-sm" x-show="$store.auth?.user?.roleId === 'admin'">Admin</a>
+      <div class="auth-status" style="margin-left: auto; position: relative;">
+        <button class="account-btn" x-on:click="accountOpen = !accountOpen" aria-label="Account menu">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        </button>
+        <div class="account-menu" x-bind:class="{ 'open': accountOpen }" x-show="accountOpen">
+          <div class="account-section">
+            <span x-show="$store.auth?.user" style="color: var(--text-muted);">
+              Signed in as: <strong x-text="$store.auth?.user?.username || $store.auth?.user?.email"></strong>
+              (<span x-text="$store.auth?.user?.roleId"></span>)
+            </span>
+            <a href="/login" class="ui-btn ui-btn-sm account-link" x-show="!$store.auth?.user">Sign In</a>
+            <a href="/Auth" class="ui-btn ui-btn-sm account-link" x-show="$store.auth?.user?.roleId === 'admin'">Admin</a>
+            <a href="/logout" class="ui-btn ui-btn-sm ui-btn-secondary account-link" x-show="$store.auth?.user">Sign Out</a>
+          </div>
+          ${ThemeMenu()}
+        </div>
       </div>
     </header>
 
@@ -140,17 +152,22 @@ export function renderLayout({ title = 'Enterprise Portal', content = '' }) {
       </main>
     </div>
 
-    ${ThemeMenu()}
-    
-    <button class="theme-toggle-btn" x-on:click="$store.os.menuOpen = !$store.os.menuOpen" aria-label="Theme Settings"><span>⚙️</span></button>
-
-    <nav class="mobile-nav" x-data>
-      <div class="nav-buttons">
-        <template x-for="app in $store.navigation.mainApps" x-key="app.id">
-          <button @click="$ajax(app.path, { target: 'main-content', method: 'GET' })" x-bind:class="{ 'active': $store.navigation.currentPath.startsWith(app.path) }" x-text="app.label"></button>
-        </template>
-      </div>
+    <!-- Portrait: apps drawer + backdrop -->
+    <div class="app-drawer-backdrop" x-show="drawerOpen" x-on:click="drawerOpen = false" x-transition.opacity></div>
+    <nav class="app-drawer" x-bind:class="{ 'open': drawerOpen }" x-data>
+      <template x-for="app in $store.navigation.mainApps" x-key="app.id">
+        <button 
+          @click="$ajax(app.path, { target: 'main-content', method: 'GET' }); drawerOpen = false"
+          x-bind:class="{ 'active': $store.navigation.currentPath.startsWith(app.path) }"
+          x-text="app.label"
+        ></button>
+      </template>
     </nav>
+
+    <!-- Portrait: submenu footer -->
+    <footer class="mobile-footer">
+      ${SubAside()}
+    </footer>
 
     <!-- Live Architecture Visualizer via Mermaid.js -->
     <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
