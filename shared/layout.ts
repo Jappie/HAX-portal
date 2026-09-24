@@ -117,10 +117,14 @@ export function renderLayout({ title = 'Enterprise Portal', content = '' }) {
     x-on:click.outside="accountOpen = false"
   >
     <header>
-      <button class="app-drawer-toggle" x-on:click="drawerOpen = !drawerOpen" aria-label="Open menu"><span>☰</span></button>
+      <button class="app-drawer-toggle" x-on:click="drawerOpen = !drawerOpen" aria-label="Open menu">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
       <h1>Enterprise Portal</h1>
       <div class="auth-status" style="margin-left: auto; position: relative;">
-        <button class="account-btn" x-on:click="accountOpen = !accountOpen" aria-label="Account menu"><span>👤</span></button>
+        <button class="account-btn" x-on:click="accountOpen = !accountOpen" aria-label="Account menu">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        </button>
         <div class="account-menu" x-bind:class="{ 'open': accountOpen }" x-show="accountOpen">
           <div class="account-section">
             <span x-show="$store.auth?.user" style="color: var(--text-muted);">
