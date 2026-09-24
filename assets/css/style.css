@@ -1,5 +1,23 @@
 /* Base (landscape / desktop): normal document scrolling; account and theme
    UI lives in the header dropdown. */
+body {
+    /* The ui-light/ui-dark class lives on body, but opui.css consumes
+       --color-scheme on html, so color-scheme must be set here for
+       light-dark() tokens to flip when darkMode toggles. */
+    color-scheme: light;
+
+    --text-primary: light-dark(var(--gray-15), var(--gray-1));
+    --text-muted: light-dark(var(--gray-13), var(--gray-4));
+    --surface-default: light-dark(var(--gray-1), var(--gray-13));
+    --surface-tonal: light-dark(var(--gray-3), var(--gray-12));
+    --surface-elevated: light-dark(var(--gray-1), var(--gray-12));
+    --border-color: light-dark(var(--gray-4), var(--gray-12));
+}
+
+body.ui-dark {
+    color-scheme: dark;
+}
+
 header {
     display: flex;
     align-items: center;
@@ -237,6 +255,10 @@ header {
         inset: 0;
         background: rgb(0 0 0 / 0.3);
         z-index: 1004;
+        /* x-show only clears the inline display:none; the base rule above
+           keeps display:none, so the backdrop must be re-enabled here to be
+           visible and catch outside clicks. */
+        display: block;
     }
 
     /* Submenu footer: horizontally scrollable row of items */
