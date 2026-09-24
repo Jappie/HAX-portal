@@ -178,6 +178,8 @@ main {
   background: var(--surface-tonal);
 }
 
+/* Narrow viewports: if the portrait shell does not apply (landscape phones),
+   collapse the asides into flow but let the document scroll normally. */
 @media (max-width: 768px) {
   .layout-container {
     flex-direction: column;
@@ -205,40 +207,12 @@ main {
   }
 }
 
-.mobile-nav {
-  display: none;
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: var(--surface-tonal);
-  border-top: 1px solid var(--gray-4);
-  padding: var(--size-2);
-  padding-bottom: calc(var(--size-2) + env(safe-area-inset-bottom));
-  z-index: 1000;
-}
-
-.mobile-nav .nav-buttons {
-  display: flex;
-  justify-content: space-around;
-}
-
-.mobile-nav button {
-  padding: var(--size-2);
-  background: none;
-  border: none;
-  color: var(--text-muted);
-  cursor: pointer;
-  font-size: var(--font-size-0);
-}
-
-.mobile-nav button.active {
-  color: var(--color-8);
-  border-top: 2px solid var(--color-8);
-}
-
-@media (max-width: 768px) {
-  .mobile-nav {
-    display: block;
+/* Portrait shell takes over from the rules above: apps live in the drawer,
+   the submenu in the fixed footer, and the in-flow copies are hidden. */
+@media (max-width: 768px) and (orientation: portrait) {
+  .layout-container .sub-aside {
+    display: none;
   }
 }
+
+
