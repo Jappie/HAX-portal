@@ -1,7 +1,7 @@
 // Shared HAX utilities
 
 import { renderLayout } from './layout.ts';
-import { raw } from 'hono/html';
+import { html, raw } from 'hono/html';
 import type { Context } from 'hono';
 
 export interface NavState {
@@ -37,11 +37,11 @@ export function requestedTargetIds(c: Context): string[] {
 
 // Wrap an AJAX partial in a wrapper element per requested target: when the
 // response lacks an element with a requested id, alpine-ajax removes that
-// target element from the document (ajax:missing).
-export function wrapAjaxPartial(c: Context, contentHtml: string): string {
-  return requestedTargetIds(c)
-    .map((id) => `<div id="${id}">${contentHtml}</div>`)
-    .join('');
+// target element from the document (ajax:missing). hono/html natively
+// unpacks the array of wrapper parts and passes the view markup through
+// unescaped.
+export function wrapAjaxPartial(c: Context, viewHtml: unknown) {
+  return html`${requestedTargetIds(c).map((id) => html`<div id="${id}">${viewHtml}</div>`)}`;
 }
 
 // Global Render Helper (Full Page vs Alpine AJAX Partial Switch)
@@ -49,7 +49,7 @@ export const renderSmart = function(c: Context, viewHtml: unknown) {
   const isAjax = c.req.header('X-Alpine-Request') === 'true';
   
   if (isAjax) {
-    return c.html(raw(wrapAjaxPartial(c, (viewHtml as string).toString())));
+    return c.html(wrapAjaxPartial(c, viewHtml));
   }
   
   // For full page, wrap in layout
