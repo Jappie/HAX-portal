@@ -30,13 +30,11 @@ routes.get('/', createMenuRoute({
   menuName: 'Customers',
   isFavorite: true,
   resource: 'customers',
-  roles: ['admin', 'sales', 'guest'],
+  roles: ['admin', 'user', 'guest'],
   handler: async (c: Context) => {
-    // Inject mock user if better-auth isn't fully active for requests during dev
-    if (!c.get('user')) c.set('user', { roleId: 'admin' });
-
-    // Use ABAC engine middleware output if applied
-    const customers = await customersData.getAll(c.get('abac')?.readFields);
+    // Field projection comes from the better-auth access middleware
+    const user = c.get('user');
+    const customers = await customersData.getAll(c.get('abac')?.readFields ?? (user ? ['id', 'name', 'industry', 'location'] : []));
     
     const meta = {
       currentPath: '/Customers',
