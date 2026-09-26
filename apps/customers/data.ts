@@ -45,6 +45,23 @@ export const customersData = {
     return this.getAll();
   },
 
+  async createCustomer(data: { id: string; name: string; industry?: string; location?: string }): Promise<Customer> {
+    await db.insert(customers).values(data).run();
+    const created = await this.getById(data.id);
+    return created as Customer;
+  },
+
+  async updateCustomer(id: string, data: Partial<Customer>): Promise<void> {
+    await db.update(customers).set(data).where(eq(customers.id, id)).run();
+  },
+
+  async deleteCustomer(id: string): Promise<void> {
+    await db.delete(notes).where(eq(notes.customerId, id)).run();
+    await db.delete(addresses).where(eq(addresses.customerId, id)).run();
+    await db.delete(contacts).where(eq(contacts.customerId, id)).run();
+    await db.delete(customers).where(eq(customers.id, id)).run();
+  },
+
   // ==========================================
   // CONTACT DATA ACCESS
   // ==========================================
@@ -66,6 +83,29 @@ export const customersData = {
     return result || null;
   },
 
+  async createContact(customerId: string, data: { id: string; name: string; email?: string; phone?: string }): Promise<Contact> {
+    const baseId = customerId.split('-')[0];
+    await db.insert(contacts).values({ ...data, customerId: baseId }).run();
+    const created = await this.getContactById(customerId, data.id);
+    return created as Contact;
+  },
+
+  async updateContact(customerId: string, contactId: string, data: Partial<Contact>): Promise<void> {
+    const baseId = customerId.split('-')[0];
+    await db.update(contacts).set(data).where(and(
+      eq(contacts.customerId, baseId),
+      eq(contacts.id, contactId)
+    )).run();
+  },
+
+  async deleteContact(customerId: string, contactId: string): Promise<void> {
+    const baseId = customerId.split('-')[0];
+    await db.delete(contacts).where(and(
+      eq(contacts.customerId, baseId),
+      eq(contacts.id, contactId)
+    )).run();
+  },
+
   // ==========================================
   // ADDRESS DATA ACCESS
   // ==========================================
@@ -76,6 +116,16 @@ export const customersData = {
     return db.select().from(addresses).where(eq(addresses.customerId, baseId)).all();
   },
 
+  async createAddress(customerId: string, data: { id: string; type?: string; street?: string; city?: string; country?: string }): Promise<Address> {
+    const baseId = customerId.split('-')[0];
+    await db.insert(addresses).values({ ...data, customerId: baseId }).run();
+    const created = await db.select().from(addresses).where(and(
+      eq(addresses.customerId, baseId),
+      eq(addresses.id, data.id)
+    )).get();
+    return created as Address;
+  },
+
   // ==========================================
   // NOTE DATA ACCESS
   // ==========================================
@@ -84,6 +134,16 @@ export const customersData = {
   async getNotesByCustomer(customerId: string): Promise<Note[]> {
     const baseId = customerId.split('-')[0];
     return db.select().from(notes).where(eq(notes.customerId, baseId)).all();
+  },
+
+  async createNote(customerId: string, data: { id: string; content: string; date?: string; author?: string }): Promise<Note> {
+    const baseId = customerId.split('-')[0];
+    await db.insert(notes).values({ ...data, customerId: baseId }).run();
+    const created = await db.select().from(notes).where(and(
+      eq(notes.customerId, baseId),
+      eq(notes.id, data.id)
+    )).get();
+    return created as Note;
   },
 };
 
