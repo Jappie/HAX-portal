@@ -1,8 +1,8 @@
 // Auth Routes - Login, Logout, User Management, Role Management, ABAC Management
 
 import { Hono } from 'hono';
-import { getCookie, deleteCookie } from 'hono/cookie';
 import { renderSmart } from '../../shared/hax.ts';
+import { auth } from '../../db/auth.ts';
 import { 
   requireAuth, 
   requireRole,
@@ -386,7 +386,7 @@ routes.get('/auth/permissions', requireAuth, requireRole('admin'), async (c: Con
     const roles = await getAllRoles();
     
     // Get unique resources for filter
-    const resources = [...new Set(permissions.map(p => p.resource))];
+    const resources = [...new Set(permissions.map(p => String(p.resource)))];
     
     const meta = {
       currentPath: '/auth/permissions',
@@ -719,15 +719,21 @@ routes.get('/auth/profile/sessions', requireAuth, async (c: Context) => {
 routes.post('/auth/profile/sessions/:id/invalidate', requireAuth, async (c: Context) => {
   try {
     const sessionId = c.req.param('id');
-    const currentSessionId = getCookie(c, 'session_id');
-    
-    // Prevent invalidating current session
-    if (sessionId === currentSessionId) {
-      await invalidateSession(sessionId);
-      deleteCookie(c, 'session_id', { path: '/' });
+    const currentSession = await auth.api.getSession({ headers: c.req.raw.headers });
+
+    // Sign out fully when invalidating the current session
+    if (currentSession && sessionId === currentSession.session.id) {
+      const response = await auth.api.signOut({
+        headers: c.req.raw.headers,
+        asResponse: true,
+      });
+      const setCookieHeader = response.headers.get('set-cookie');
+      if (setCookieHeader) {
+        c.header('set-cookie', setCookieHeader, { append: true });
+      }
       return c.redirect('/login');
     }
-    
+
     await invalidateSession(sessionId);
     return c.redirect('/auth/profile/sessions');
   } catch (error) {
