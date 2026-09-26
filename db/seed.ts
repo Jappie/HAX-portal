@@ -9,133 +9,16 @@ import {
   roles, 
   appPermissions
 } from './schema.ts';
+import { createTablesSQL, tablesInDeleteOrder } from './ddl.ts';
+import { getTableName } from 'drizzle-orm';
 
 async function createTables() {
   console.log('🛠️  Creating tables...');
   
-  // Create tables using raw SQL
-  const createTablesSQL = `
-    CREATE TABLE IF NOT EXISTS customers (
-      id TEXT PRIMARY KEY,
-      name TEXT NOT NULL,
-      industry TEXT,
-      location TEXT
-    );
-    
-    CREATE TABLE IF NOT EXISTS contacts (
-      id TEXT PRIMARY KEY,
-      customer_id TEXT NOT NULL REFERENCES customers(id),
-      name TEXT NOT NULL,
-      email TEXT,
-      phone TEXT
-    );
-    
-    CREATE TABLE IF NOT EXISTS addresses (
-      id TEXT PRIMARY KEY,
-      customer_id TEXT NOT NULL REFERENCES customers(id),
-      type TEXT,
-      street TEXT,
-      city TEXT,
-      country TEXT
-    );
-    
-    CREATE TABLE IF NOT EXISTS notes (
-      id TEXT PRIMARY KEY,
-      customer_id TEXT NOT NULL REFERENCES customers(id),
-      content TEXT NOT NULL,
-      date TEXT,
-      author TEXT
-    );
-    
-    CREATE TABLE IF NOT EXISTS portal_apps (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT NOT NULL,
-      fullname TEXT NOT NULL,
-      category TEXT NOT NULL DEFAULT 'default',
-      mount_path TEXT NOT NULL,
-      module_path TEXT NOT NULL
-    );
-    
-    CREATE TABLE IF NOT EXISTS roles (
-      id TEXT PRIMARY KEY,
-      name TEXT NOT NULL,
-      description TEXT
-    );
-    
-    CREATE TABLE IF NOT EXISTS users (
-      id TEXT PRIMARY KEY,
-      name TEXT NOT NULL,
-      email TEXT NOT NULL UNIQUE,
-      email_verified BOOLEAN NOT NULL DEFAULT 0,
-      image TEXT,
-      created_at INTEGER NOT NULL,
-      updated_at INTEGER NOT NULL,
-      username TEXT UNIQUE,
-      password TEXT,
-      display_name TEXT,
-      role_id TEXT NOT NULL DEFAULT 'guest'
-    );
-    
-    CREATE TABLE IF NOT EXISTS sessions (
-      id TEXT PRIMARY KEY,
-      token TEXT,
-      expires_at INTEGER NOT NULL,
-      ip_address TEXT,
-      user_agent TEXT,
-      user_id TEXT NOT NULL REFERENCES users(id),
-      created_at INTEGER NOT NULL,
-      updated_at INTEGER NOT NULL
-    );
-    
-    CREATE TABLE IF NOT EXISTS accounts (
-      id TEXT PRIMARY KEY,
-      account_id TEXT NOT NULL,
-      provider_id TEXT NOT NULL,
-      user_id TEXT NOT NULL REFERENCES users(id),
-      access_token TEXT,
-      access_token_expires_at INTEGER,
-      refresh_token TEXT,
-      refresh_token_expires_at INTEGER,
-      scope TEXT,
-      id_token TEXT,
-      expires_at INTEGER,
-      password TEXT,
-      created_at INTEGER NOT NULL,
-      updated_at INTEGER NOT NULL
-    );
-    
-    CREATE TABLE IF NOT EXISTS verifications (
-      id TEXT PRIMARY KEY,
-      identifier TEXT NOT NULL,
-      value TEXT NOT NULL,
-      expires_at INTEGER NOT NULL,
-      created_at INTEGER NOT NULL,
-      updated_at INTEGER NOT NULL
-    );
-    
-    CREATE TABLE IF NOT EXISTS app_permissions (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      role TEXT NOT NULL,
-      resource TEXT NOT NULL,
-      attribute TEXT NOT NULL,
-      actions TEXT NOT NULL
-    );
-    
-    CREATE TABLE IF NOT EXISTS portal_users (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      username TEXT NOT NULL UNIQUE
-    );
-    
-    CREATE TABLE IF NOT EXISTS portal_user_roles (
-      user_id INTEGER NOT NULL REFERENCES portal_users(id),
-      app_key TEXT NOT NULL, 
-      role TEXT NOT NULL,
-      PRIMARY KEY (user_id, app_key)
-    );
-  `;
-  
+  // Tables are generated from the Drizzle schema (db/ddl.ts) so the
+  // database definition cannot drift from db/schema.ts
   try {
-    sqlite.exec(createTablesSQL);
+    sqlite.exec(createTablesSQL());
     console.log('✅ All tables created');
   } catch (err) {
     console.error('❌ Error creating tables:', err);
@@ -149,22 +32,10 @@ async function seedDatabase() {
   // Create tables first
   await createTables();
 
-  // Clear existing data using raw SQL (safer than drizzle for this)
-  const clearTablesSQL = `
-    DELETE FROM notes;
-    DELETE FROM addresses;
-    DELETE FROM contacts;
-    DELETE FROM customers;
-    DELETE FROM portal_user_roles;
-    DELETE FROM portal_users;
-    DELETE FROM app_permissions;
-    DELETE FROM users;
-    DELETE FROM roles;
-    DELETE FROM portal_apps;
-    DELETE FROM sessions;
-    DELETE FROM accounts;
-    DELETE FROM verifications;
-  `;
+  // Children first so DELETEs respect foreign keys
+  const clearTablesSQL = tablesInDeleteOrder()
+    .map((table) => `DELETE FROM ${getTableName(table)};`)
+    .join('\n');
   try {
     sqlite.exec(clearTablesSQL);
   } catch {
