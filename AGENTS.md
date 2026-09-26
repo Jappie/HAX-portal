@@ -45,6 +45,7 @@
 - **Separated concerns**: Each app has server.ts, app.ts, routes.ts, views.ts, data.ts
 - **Component-based**: Views use `hono/html` for clean Alpine template rendering
 - **JSON state transport**: Navigation state is safely transported via `<script type="application/json">` tag (no attribute parsing)
+- **Shared components are mandatory**: All views use the shared/OPUI components (`shared/opui/Button.ts`, `shared/components/Breadcrumbs.ts`, `shared/components/MainAside.ts`, `shared/components/SubAside.ts`, `shared/components/ThemeMenu.ts`) instead of hand-rolled HTML. Buttons that navigate must use the shared `Button` component (never plain `<a href>` or ad-hoc `<button @click>` markup), so every app is fragment-aligned: navigation always swaps the `main-content` partial via Alpine AJAX and updates the navigation store through ajax:after.
 
 ## HTML Concatenation with hono/html
 Arrays of HTML parts are used throughout the codebase:
