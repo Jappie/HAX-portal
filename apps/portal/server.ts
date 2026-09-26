@@ -1,12 +1,12 @@
 import { serve } from '@hono/node-server';
 import app from './app.ts';
-import { abacCache } from '../../shared/abacEngine.ts';
+import { accessCache } from '../../shared/access.ts';
 import { validateRoutesWithZod } from '../../shared/blueprint.ts';
 
 const port = 3000;
 
 // Initialize caches and validate blueprints
-await abacCache.reload();
+await accessCache.reload();
 validateRoutesWithZod(app);
 
 console.log(`Server started on http://localhost:${port}`);

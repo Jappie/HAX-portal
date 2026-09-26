@@ -3,7 +3,7 @@ import { html } from 'hono/html';
 import { serveStatic } from '@hono/node-server/serve-static';
 import { renderSmart, navStateScript } from '../../shared/hax.ts';
 import customerRoutes from './routes.ts';
-import { authorizeAbac } from '../../shared/abacEngine.ts';
+import { authorizeAbac } from '../../shared/access.ts';
 import { sessionMiddleware, requireAuth, handleLogin, handleLogout } from '../../shared/auth.ts';
 import type { Context } from 'hono';
 
