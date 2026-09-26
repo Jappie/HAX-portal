@@ -1,4 +1,4 @@
-import { html } from 'hono/html';
+import { html, raw } from 'hono/html';
 
 interface ButtonProps {
   label: string;
@@ -21,28 +21,30 @@ export const Button = ({
   disabled = false,
   onclick = ''
 }: ButtonProps) => {
-  // If path is provided, use Alpine AJAX
+  // If path is provided, use Alpine AJAX. The handler must be inserted
+  // unescaped: hono/html would otherwise entity-encode the quotes inside the
+  // $ajax() expression and Alpine could not evaluate it.
   if (path) {
     const ajaxClick = `$ajax('${path}', { target: '${target}', method: '${method}' })`;
     const clickHandler = onclick ? `${onclick}; ${ajaxClick}` : ajaxClick;
     return html`<button
       type="${type}"
       class="${className}"
-      x-on:click="${clickHandler}"
+      x-on:click="${raw(clickHandler)}"
       ?disabled="${disabled}"
     >${label}</button>`;
   }
-  
+
   // If onclick is provided without path
   if (onclick) {
     return html`<button
       type="${type}"
       class="${className}"
-      x-on:click="${onclick}"
+      x-on:click="${raw(onclick)}"
       ?disabled="${disabled}"
     >${label}</button>`;
   }
-  
+
   // Default button
   return html`<button
     type="${type}"
