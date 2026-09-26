@@ -2,6 +2,7 @@
 
 import { html } from 'hono/html';
 import { navStateScript } from '../../shared/hax.ts';
+import { Button } from '../../shared/opui/Button.ts';
 
 interface BreadcrumbItem {
   label: string;
@@ -83,10 +84,10 @@ export const authViews = {
       <div class="ui-card ui-outlined ui-elevated ui-tonal" style="padding: var(--size-6);">
         <h3 style="margin-top: 0;">Quick Actions</h3>
         <div style="display: flex; gap: var(--size-4); flex-wrap: wrap; margin-top: var(--size-4);">
-          <a href="/auth/users" class="ui-btn ui-btn-sm ui-btn-primary">Manage Users</a>
-          <a href="/auth/roles" class="ui-btn ui-btn-sm ui-btn-secondary">Manage Roles</a>
-          <a href="/auth/permissions" class="ui-btn ui-btn-sm ui-btn-secondary">Manage Permissions</a>
-          <a href="/auth/sessions" class="ui-btn ui-btn-sm ui-btn-secondary">View Sessions</a>
+          ${Button({ label: 'Manage Users', path: '/auth/users', class: 'ui-btn ui-btn-sm ui-btn-primary' })}
+          ${Button({ label: 'Manage Roles', path: '/auth/roles', class: 'ui-btn ui-btn-sm ui-btn-secondary' })}
+          ${Button({ label: 'Manage Permissions', path: '/auth/permissions', class: 'ui-btn ui-btn-sm ui-btn-secondary' })}
+          ${Button({ label: 'View Sessions', path: '/auth/sessions', class: 'ui-btn ui-btn-sm ui-btn-secondary' })}
         </div>
       </div>
     `;
@@ -107,9 +108,7 @@ export const authViews = {
       <div class="ui-card ui-outlined ui-elevated ui-tonal" style="padding: var(--size-4);">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--size-4);">
           <h3 style="margin: 0;">Users (${users.length})</h3>
-          <a href="/auth/users/create" class="ui-btn ui-btn-sm ui-btn-primary">
-            <span>+ Create User</span>
-          </a>
+          ${Button({ label: '+ Create User', path: '/auth/users/create', class: 'ui-btn ui-btn-sm ui-btn-primary' })}
         </div>
         
         ${users.length === 0 ? html`<p style="color: var(--text-muted);">No users found.</p>` : ''}
@@ -143,9 +142,7 @@ export const authViews = {
                   </td>
                   <td style="padding: var(--size-2); color: var(--text-muted);">${createdDate}</td>
                   <td style="padding: var(--size-2); text-align: right;">
-                    <a href="/auth/users/${user.id}/edit" class="ui-btn ui-btn-xs ui-btn-secondary" style="margin-right: var(--size-2);">
-                      Edit
-                    </a>
+                    ${Button({ label: 'Edit', path: `/auth/users/${user.id}/edit`, class: 'ui-btn ui-btn-xs ui-btn-secondary' })}
                     <form method="POST" action="/auth/users/${user.id}/delete" style="display: inline;">
                       <button type="submit" class="ui-btn ui-btn-xs ui-btn-danger" 
                               onclick="return confirm('Are you sure you want to delete this user?')">
@@ -261,7 +258,7 @@ export const authViews = {
           
           <div style="display: flex; gap: var(--size-4); margin-top: var(--size-6);">
             <button type="submit" class="ui-btn ui-btn-primary">Create User</button>
-            <a href="/auth/users" class="ui-btn ui-btn-secondary">Cancel</a>
+            ${Button({ label: 'Cancel', path: '/auth/users', class: 'ui-btn ui-btn-secondary' })}
           </div>
         </form>
       </div>
@@ -363,7 +360,7 @@ export const authViews = {
           
           <div style="display: flex; gap: var(--size-4); margin-top: var(--size-6);">
             <button type="submit" class="ui-btn ui-btn-primary">Update User</button>
-            <a href="/auth/users" class="ui-btn ui-btn-secondary">Cancel</a>
+            ${Button({ label: 'Cancel', path: '/auth/users', class: 'ui-btn ui-btn-secondary' })}
           </div>
         </form>
       </div>
@@ -385,9 +382,7 @@ export const authViews = {
       <div class="ui-card ui-outlined ui-elevated ui-tonal" style="padding: var(--size-4);">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--size-4);">
           <h3 style="margin: 0;">Roles (${roles.length})</h3>
-          <a href="/auth/roles/create" class="ui-btn ui-btn-sm ui-btn-primary">
-            <span>+ Create Role</span>
-          </a>
+          ${Button({ label: '+ Create Role', path: '/auth/roles/create', class: 'ui-btn ui-btn-sm ui-btn-primary' })}
         </div>
         
         ${roles.length === 0 ? html`<p style="color: var(--text-muted);">No roles found.</p>` : ''}
@@ -408,9 +403,7 @@ export const authViews = {
                 <td style="padding: var(--size-2);">${role.name}</td>
                 <td style="padding: var(--size-2); color: var(--text-muted);">${role.description || '-'}</td>
                 <td style="padding: var(--size-2); text-align: right;">
-                  <a href="/auth/roles/${role.id}/edit" class="ui-btn ui-btn-xs ui-btn-secondary" style="margin-right: var(--size-2);">
-                    Edit
-                  </a>
+                  ${Button({ label: 'Edit', path: `/auth/roles/${role.id}/edit`, class: 'ui-btn ui-btn-xs ui-btn-secondary' })}
                   ${role.id !== 'admin' && role.id !== 'guest' ? html`
                     <form method="POST" action="/auth/roles/${role.id}/delete" style="display: inline;">
                       <button type="submit" class="ui-btn ui-btn-xs ui-btn-danger" 
@@ -487,7 +480,7 @@ export const authViews = {
           
           <div style="display: flex; gap: var(--size-4); margin-top: var(--size-6);">
             <button type="submit" class="ui-btn ui-btn-primary">Create Role</button>
-            <a href="/auth/roles" class="ui-btn ui-btn-secondary">Cancel</a>
+            ${Button({ label: 'Cancel', path: '/auth/roles', class: 'ui-btn ui-btn-secondary' })}
           </div>
         </form>
       </div>
@@ -548,7 +541,7 @@ export const authViews = {
           
           <div style="display: flex; gap: var(--size-4); margin-top: var(--size-6);">
             <button type="submit" class="ui-btn ui-btn-primary">Update Role</button>
-            <a href="/auth/roles" class="ui-btn ui-btn-secondary">Cancel</a>
+            ${Button({ label: 'Cancel', path: '/auth/roles', class: 'ui-btn ui-btn-secondary' })}
           </div>
         </form>
       </div>
@@ -577,9 +570,7 @@ export const authViews = {
       <div class="ui-card ui-outlined ui-elevated ui-tonal" style="padding: var(--size-4);">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--size-4);">
           <h3 style="margin: 0;">Permissions (${permissions.length})</h3>
-          <a href="/auth/permissions/create" class="ui-btn ui-btn-sm ui-btn-primary">
-            <span>+ Create Permission</span>
-          </a>
+          ${Button({ label: '+ Create Permission', path: '/auth/permissions/create', class: 'ui-btn ui-btn-sm ui-btn-primary' })}
         </div>
         
         ${permissions.length === 0 ? html`<p style="color: var(--text-muted);">No permissions found.</p>` : ''}
@@ -615,9 +606,7 @@ export const authViews = {
                     ${perm.actions === 'R' ? html`<span style="color: var(--text-muted);"> (Read-only)</span>` : ''}
                   </td>
                   <td style="padding: var(--size-2); text-align: right;">
-                    <a href="/auth/permissions/${perm.id}/edit" class="ui-btn ui-btn-xs ui-btn-secondary" style="margin-right: var(--size-2);">
-                      Edit
-                    </a>
+                    ${Button({ label: 'Edit', path: `/auth/permissions/${perm.id}/edit`, class: 'ui-btn ui-btn-xs ui-btn-secondary' })}
                     <form method="POST" action="/auth/permissions/${perm.id}/delete" style="display: inline;">
                       <button type="submit" class="ui-btn ui-btn-xs ui-btn-danger" 
                               onclick="return confirm('Are you sure you want to delete this permission?')">
@@ -730,7 +719,7 @@ export const authViews = {
           
           <div style="display: flex; gap: var(--size-4); margin-top: var(--size-6);">
             <button type="submit" class="ui-btn ui-btn-primary">Create Permission</button>
-            <a href="/auth/permissions" class="ui-btn ui-btn-secondary">Cancel</a>
+            ${Button({ label: 'Cancel', path: '/auth/permissions', class: 'ui-btn ui-btn-secondary' })}
           </div>
         </form>
       </div>
@@ -813,7 +802,7 @@ export const authViews = {
           
           <div style="display: flex; gap: var(--size-4); margin-top: var(--size-6);">
             <button type="submit" class="ui-btn ui-btn-primary">Update Permission</button>
-            <a href="/auth/permissions" class="ui-btn ui-btn-secondary">Cancel</a>
+            ${Button({ label: 'Cancel', path: '/auth/permissions', class: 'ui-btn ui-btn-secondary' })}
           </div>
         </form>
       </div>
@@ -926,21 +915,15 @@ export const authViews = {
           </dl>
           
           <div style="margin-top: var(--size-6);">
-            <a href="/auth/profile/sessions" class="ui-btn ui-btn-sm ui-btn-secondary">
-              View My Sessions
-            </a>
+            ${Button({ label: 'View My Sessions', path: '/auth/profile/sessions', class: 'ui-btn ui-btn-sm ui-btn-secondary' })}
           </div>
         </div>
         
         <div class="ui-card ui-outlined ui-elevated ui-tonal" style="padding: var(--size-6);">
           <h3 style="margin-top: 0;">Quick Actions</h3>
           <div style="display: flex; flex-direction: column; gap: var(--size-3); margin-top: var(--size-4);">
-            <a href="/auth/profile/edit" class="ui-btn ui-btn-sm ui-btn-primary">
-              Edit Profile
-            </a>
-            <a href="/logout" class="ui-btn ui-btn-sm ui-btn-secondary">
-              Sign Out
-            </a>
+            ${Button({ label: 'Edit Profile', path: '/auth/profile/edit', class: 'ui-btn ui-btn-sm ui-btn-primary' })}
+            ${Button({ label: 'Sign Out', path: '/logout', class: 'ui-btn ui-btn-sm ui-btn-secondary' })}
           </div>
         </div>
       </div>
