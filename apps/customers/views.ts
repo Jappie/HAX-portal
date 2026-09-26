@@ -1,6 +1,7 @@
 import type { Customer, Contact, Address, Note } from './data.ts';
 import { html } from 'hono/html';
 import { navStateScript } from '../../shared/hax.ts';
+import { Button } from '../../shared/opui/Button.ts';
 
 interface BreadcrumbItem {
   label: string;
@@ -61,6 +62,47 @@ function contextActionsHtml(actions: ContextAction[]) {
       </span>
     </template>
   </div>`;
+}
+
+// Customer Create/Edit Form View
+export function CustomerForm({ meta, customer, custId }: { meta: NavigationMeta; customer: Partial<Customer> | null; custId: string }) {
+  const navState = getNavStateScript(meta);
+  const actions = contextActionsHtml(meta.contextActions);
+  const isEdit = !!customer;
+  const formAction = isEdit ? `/Customers/${custId}` : '/Customers';
+
+  return html`${navState}
+    <div class="content-header">
+      <h2>${isEdit ? `Edit Customer: ${customer!.name}` : 'Nieuwe Klant'}</h2>
+      ${actions}
+    </div>
+
+    <div class="ui-card ui-outlined ui-elevated ui-tonal" style="max-width: 500px;">
+      <div class="ui-content">
+        <form method="POST" action="${formAction}" style="display: flex; flex-direction: column; gap: var(--size-3);">
+          <div>
+            <label style="display: block; margin-bottom: var(--size-2);">Klant ID:</label>
+            <input type="text" name="id" defaultValue="${isEdit ? customer!.id || '' : ''}" ${isEdit ? 'disabled' : ''} required style="width: 100%; padding: var(--size-2); border: 1px solid var(--gray-4); border-radius: var(--radius-2);"/>
+          </div>
+          <div>
+            <label style="display: block; margin-bottom: var(--size-2);">Naam:</label>
+            <input type="text" name="name" defaultValue="${isEdit ? customer!.name || '' : ''}" required style="width: 100%; padding: var(--size-2); border: 1px solid var(--gray-4); border-radius: var(--radius-2);"/>
+          </div>
+          <div>
+            <label style="display: block; margin-bottom: var(--size-2);">Industrie:</label>
+            <input type="text" name="industry" defaultValue="${isEdit ? customer!.industry || '' : ''}" style="width: 100%; padding: var(--size-2); border: 1px solid var(--gray-4); border-radius: var(--radius-2);"/>
+          </div>
+          <div>
+            <label style="display: block; margin-bottom: var(--size-2);">Locatie:</label>
+            <input type="text" name="location" defaultValue="${isEdit ? customer!.location || '' : ''}" style="width: 100%; padding: var(--size-2); border: 1px solid var(--gray-4); border-radius: var(--radius-2);"/>
+          </div>
+          <div style="display: flex; gap: var(--size-2);">
+            <button type="submit" class="btn btn-primary">${isEdit ? 'Opslaan' : 'Aanmaken'}</button>
+            ${Button({ label: 'Annuleren', path: isEdit ? `/Customers/${custId}` : '/Customers', class: 'btn btn-secondary' })}
+          </div>
+        </form>
+      </div>
+    </div>`;
 }
 
 // Customers List View
@@ -262,6 +304,7 @@ export function ContactEdit({ meta, customer, custId, contact, contactId }: { me
   
   const contactName = contact ? contact.name : contactId.split('-')[1] || contactId;
   const customerName = customer ? customer.name : custId.split('-')[1] || custId;
+  const formAction = contact ? `/Customers/${custId}/Contact/${contactId}` : `/Customers/${custId}/Contact`;
 
   return html`${navState}
     <div class="content-header">
@@ -271,7 +314,7 @@ export function ContactEdit({ meta, customer, custId, contact, contactId }: { me
 
     <div class="ui-card ui-outlined ui-elevated ui-tonal" style="max-width: 400px;">
       <div class="ui-content">
-        <form id="edit-contact-form" style="display: flex; flex-direction: column; gap: var(--size-3);">
+        <form id="edit-contact-form" method="POST" action="${formAction}" style="display: flex; flex-direction: column; gap: var(--size-3);">
           <div>
             <label style="display: block; margin-bottom: var(--size-2);">Customer / Organization:</label>
             <input type="text" defaultValue="${customerName} (${custId})" disabled style="width: 100%; padding: var(--size-2); border: 1px solid var(--gray-4); border-radius: var(--radius-2);"/>
@@ -287,6 +330,118 @@ export function ContactEdit({ meta, customer, custId, contact, contactId }: { me
           <div>
             <label style="display: block; margin-bottom: var(--size-2);">Phone:</label>
             <input type="tel" name="phone" defaultValue="${contact ? contact.phone || '' : ''}" style="width: 100%; padding: var(--size-2); border: 1px solid var(--gray-4); border-radius: var(--radius-2);"/>
+          </div>
+          <div>
+            <button type="submit" class="btn btn-primary">Opslaan</button>
+          </div>
+        </form>
+      </div>
+    </div>`;
+}
+
+// Contact New View (reuses ContactEdit with empty contact)
+export function ContactNew({ meta, customer, custId }: { meta: NavigationMeta; customer: Partial<Customer> | null; custId: string }) {
+  const navState = getNavStateScript(meta);
+  const actions = contextActionsHtml(meta.contextActions);
+  const customerName = customer ? customer.name : custId.split('-')[1] || custId;
+
+  return html`${navState}
+    <div class="content-header">
+      <h2>Nieuwe Contact voor ${customerName}</h2>
+      ${actions}
+    </div>
+
+    <div class="ui-card ui-outlined ui-elevated ui-tonal" style="max-width: 400px;">
+      <div class="ui-content">
+        <form method="POST" action="/Customers/${custId}/Contact" style="display: flex; flex-direction: column; gap: var(--size-3);">
+          <div>
+            <label style="display: block; margin-bottom: var(--size-2);">Contact ID:</label>
+            <input type="text" name="id" required style="width: 100%; padding: var(--size-2); border: 1px solid var(--gray-4); border-radius: var(--radius-2);"/>
+          </div>
+          <div>
+            <label style="display: block; margin-bottom: var(--size-2);">Contact Name:</label>
+            <input type="text" name="contactName" required style="width: 100%; padding: var(--size-2); border: 1px solid var(--gray-4); border-radius: var(--radius-2);"/>
+          </div>
+          <div>
+            <label style="display: block; margin-bottom: var(--size-2);">Email:</label>
+            <input type="email" name="email" style="width: 100%; padding: var(--size-2); border: 1px solid var(--gray-4); border-radius: var(--radius-2);"/>
+          </div>
+          <div>
+            <label style="display: block; margin-bottom: var(--size-2);">Phone:</label>
+            <input type="tel" name="phone" style="width: 100%; padding: var(--size-2); border: 1px solid var(--gray-4); border-radius: var(--radius-2);"/>
+          </div>
+          <div>
+            <button type="submit" class="btn btn-primary">Aanmaken</button>
+          </div>
+        </form>
+      </div>
+    </div>`;
+}
+
+// Address New View
+export function AddressNew({ meta, customer, custId }: { meta: NavigationMeta; customer: Partial<Customer> | null; custId: string }) {
+  const navState = getNavStateScript(meta);
+  const actions = contextActionsHtml(meta.contextActions);
+  const customerName = customer ? customer.name : custId.split('-')[1] || custId;
+
+  return html`${navState}
+    <div class="content-header">
+      <h2>Nieuw Adres voor ${customerName}</h2>
+      ${actions}
+    </div>
+
+    <div class="ui-card ui-outlined ui-elevated ui-tonal" style="max-width: 400px;">
+      <div class="ui-content">
+        <form method="POST" action="/Customers/${custId}/Address" style="display: flex; flex-direction: column; gap: var(--size-3);">
+          <div>
+            <label style="display: block; margin-bottom: var(--size-2);">Adres ID:</label>
+            <input type="text" name="id" required style="width: 100%; padding: var(--size-2); border: 1px solid var(--gray-4); border-radius: var(--radius-2);"/>
+          </div>
+          <div>
+            <label style="display: block; margin-bottom: var(--size-2);">Type:</label>
+            <input type="text" name="type" placeholder="e.g. hoofdkantoor" style="width: 100%; padding: var(--size-2); border: 1px solid var(--gray-4); border-radius: var(--radius-2);"/>
+          </div>
+          <div>
+            <label style="display: block; margin-bottom: var(--size-2);">Straat:</label>
+            <input type="text" name="street" style="width: 100%; padding: var(--size-2); border: 1px solid var(--gray-4); border-radius: var(--radius-2);"/>
+          </div>
+          <div>
+            <label style="display: block; margin-bottom: var(--size-2);">Stad:</label>
+            <input type="text" name="city" style="width: 100%; padding: var(--size-2); border: 1px solid var(--gray-4); border-radius: var(--radius-2);"/>
+          </div>
+          <div>
+            <label style="display: block; margin-bottom: var(--size-2);">Land:</label>
+            <input type="text" name="country" style="width: 100%; padding: var(--size-2); border: 1px solid var(--gray-4); border-radius: var(--radius-2);"/>
+          </div>
+          <div>
+            <button type="submit" class="btn btn-primary">Aanmaken</button>
+          </div>
+        </form>
+      </div>
+    </div>`;
+}
+
+// Note New View
+export function NoteNew({ meta, customer, custId }: { meta: NavigationMeta; customer: Partial<Customer> | null; custId: string }) {
+  const navState = getNavStateScript(meta);
+  const actions = contextActionsHtml(meta.contextActions);
+  const customerName = customer ? customer.name : custId.split('-')[1] || custId;
+
+  return html`${navState}
+    <div class="content-header">
+      <h2>Nieuwe Notitie voor ${customerName}</h2>
+      ${actions}
+    </div>
+
+    <div class="ui-card ui-outlined ui-elevated ui-tonal" style="max-width: 400px;">
+      <div class="ui-content">
+        <form method="POST" action="/Customers/${custId}/Notes" style="display: flex; flex-direction: column; gap: var(--size-3);">
+          <div>
+            <label style="display: block; margin-bottom: var(--size-2);">Notitie:</label>
+            <textarea name="content" required rows="4" style="width: 100%; padding: var(--size-2); border: 1px solid var(--gray-4); border-radius: var(--radius-2);"></textarea>
+          </div>
+          <div>
+            <button type="submit" class="btn btn-primary">Aanmaken</button>
           </div>
         </form>
       </div>
@@ -371,9 +526,13 @@ export function NotesList({ meta, customer, custId, notes }: { meta: NavigationM
 export const customerViews = {
   list: CustomersList,
   detail: CustomerDetail,
+  form: CustomerForm,
   contactsList: ContactsList,
   contactDetail: ContactDetail,
   contactEdit: ContactEdit,
+  contactNew: ContactNew,
+  addressNew: AddressNew,
   addressesList: AddressesList,
+  noteNew: NoteNew,
   notesList: NotesList
 };
