@@ -251,7 +251,7 @@ export async function handleLogout(c: Context) {
 // ==========================================
 
 // Get all users with their roles
-export async function getAllUsers(): Promise<Record<string, unknown>[]> {
+export async function getAllUsers() {
   try {
     return await db.select({
       id: users.id,
@@ -374,7 +374,7 @@ export async function deleteUser(id: string) {
 // ==========================================
 
 // Get all roles
-export async function getAllRoles(): Promise<Record<string, unknown>[]> {
+export async function getAllRoles() {
   try {
     return await db.select().from(roles).all();
   } catch (error) {
@@ -453,7 +453,7 @@ export async function deleteRole(id: string) {
 // ==========================================
 
 // Get all permissions
-export async function getAllPermissions(): Promise<Record<string, unknown>[]> {
+export async function getAllPermissions() {
   try {
     return await db.select().from(appPermissions).all();
   } catch (error) {
@@ -463,7 +463,7 @@ export async function getAllPermissions(): Promise<Record<string, unknown>[]> {
 }
 
 // Get permissions for a specific role
-export async function getPermissionsByRole(role: string): Promise<Record<string, unknown>[]> {
+export async function getPermissionsByRole(role: string) {
   try {
     return await db.select().from(appPermissions).where(eq(appPermissions.role, role)).all();
   } catch (error) {
@@ -534,7 +534,7 @@ export async function deletePermission(id: number) {
 // ==========================================
 
 // Get all active sessions
-export async function getAllSessions(): Promise<Record<string, unknown>[]> {
+export async function getAllSessions() {
   try {
     return await db.select().from(sessions).all();
   } catch (error) {
@@ -555,7 +555,7 @@ export async function invalidateSession(sessionId: string) {
 }
 
 // Get sessions for a specific user
-export async function getSessionsByUser(userId: string): Promise<Record<string, unknown>[]> {
+export async function getSessionsByUser(userId: string) {
   try {
     return await db.select().from(sessions).where(eq(sessions.userId, userId)).all();
   } catch (error) {

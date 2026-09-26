@@ -3,6 +3,10 @@
 import { html } from 'hono/html';
 import { navStateScript } from '../../shared/hax.ts';
 import { Button } from '../../shared/opui/Button.ts';
+import type { users, sessions } from '../../db/schema.ts';
+
+type UserRow = typeof users.$inferSelect;
+type SessionRow = typeof sessions.$inferSelect;
 
 interface BreadcrumbItem {
   label: string;
@@ -97,7 +101,7 @@ export const authViews = {
   // USER MANAGEMENT VIEWS
   // ==========================================
 
-  userList: ({ users, roles, meta }: ViewProps & { users: Record<string, unknown>[]; roles: Record<string, unknown>[] }) => {
+  userList: ({ users, roles, meta }: ViewProps & { users: Partial<UserRow>[]; roles: Record<string, unknown>[] }) => {
     const navState = getNavStateScript(meta);
     
     return html`${navState}
@@ -813,7 +817,7 @@ export const authViews = {
   // SESSION MANAGEMENT VIEWS
   // ==========================================
 
-  sessionList: ({ sessions, meta }: ViewProps & { sessions: Record<string, unknown>[] }) => {
+  sessionList: ({ sessions, meta }: ViewProps & { sessions: (SessionRow & { username: string })[] }) => {
     const navState = getNavStateScript(meta);
     
     return html`${navState}
@@ -875,7 +879,7 @@ export const authViews = {
   // PROFILE VIEWS
   // ==========================================
 
-  profile: ({ user, meta }: ViewProps & { user: Record<string, unknown> }) => {
+  profile: ({ user, meta }: ViewProps & { user: UserRow }) => {
     const navState = getNavStateScript(meta);
     
     return html`${navState}
@@ -930,7 +934,7 @@ export const authViews = {
     `;
   },
 
-  profileSessions: ({ sessions, meta }: ViewProps & { sessions: Record<string, unknown>[] }) => {
+  profileSessions: ({ sessions, meta }: ViewProps & { sessions: SessionRow[] }) => {
     const navState = getNavStateScript(meta);
     
     return html`${navState}
