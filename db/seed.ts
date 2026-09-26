@@ -10,6 +10,8 @@ import {
   appPermissions
 } from './schema.ts';
 import { createTablesSQL, tablesInDeleteOrder } from './ddl.ts';
+import { eq } from 'drizzle-orm';
+import { auth } from './auth.ts';
 import { getTableName } from 'drizzle-orm';
 
 async function createTables() {
@@ -19,6 +21,7 @@ async function createTables() {
   // database definition cannot drift from db/schema.ts
   try {
     sqlite.exec(createTablesSQL());
+
     console.log('✅ All tables created');
   } catch (err) {
     console.error('❌ Error creating tables:', err);
@@ -111,49 +114,30 @@ async function seedDatabase() {
   }
   console.log('✅ Inserted roles');
 
-  // Insert users using Drizzle ORM
+  // Create users through better-auth so passwords are hashed (scrypt) and
+  // credential account rows are created; then set the portal-specific fields.
   const now = new Date();
   const userData = [
-    { 
-      id: 'u1', 
-      name: 'Admin', 
-      username: 'admin', 
-      email: 'admin@portal.local', 
-      password: 'admin',
-      displayName: 'Admin User', 
-      roleId: 'admin', 
-      createdAt: now, 
-      updatedAt: now,
-      emailVerified: true
-    },
-    { 
-      id: 'u2', 
-      name: 'User', 
-      username: 'user', 
-      email: 'user@portal.local', 
-      password: 'user',
-      displayName: 'Regular User', 
-      roleId: 'user', 
-      createdAt: now, 
-      updatedAt: now,
-      emailVerified: true
-    },
-    { 
-      id: 'u3', 
-      name: 'Guest', 
-      username: 'guest', 
-      email: 'guest@portal.local', 
-      password: 'guest',
-      displayName: 'Guest User', 
-      roleId: 'guest', 
-      createdAt: now, 
-      updatedAt: now,
-      emailVerified: true
-    },
+    { username: 'admin', email: 'admin@portal.local', password: 'admin', name: 'Admin', displayName: 'Admin User', roleId: 'admin' },
+    { username: 'user', email: 'user@portal.local', password: 'user', name: 'User', displayName: 'Regular User', roleId: 'user' },
+    { username: 'guest', email: 'guest@portal.local', password: 'guest', name: 'Guest', displayName: 'Guest User', roleId: 'guest' },
   ];
-  
+
   for (const user of userData) {
-    await db.insert(users).values(user).run();
+    const signUp = await auth.api.signUpEmail({
+      body: {
+        username: user.username,
+        email: user.email,
+        password: user.password,
+        name: user.name,
+      },
+    });
+
+    await db.update(users).set({
+      displayName: user.displayName,
+      roleId: user.roleId,
+      updatedAt: now,
+    }).where(eq(users.id, signUp.user.id));
   }
   console.log('✅ Inserted users');
 
@@ -187,8 +171,7 @@ async function seedDatabase() {
   console.log('  user / user');
   console.log('  guest / guest');
   console.log('');
-  console.log('Note: Passwords are stored as plain text in the database.');
-  console.log('The login handler will validate them directly against the database.');
+  console.log('Passwords are hashed by better-auth (scrypt) in the accounts table.');
 }
 
 // Run seed
