@@ -1,14 +1,16 @@
 // Authentication Middleware and Utilities
 // Central auth module for the HAX Portal
-// Uses Drizzle ORM
+// Session handling and credential verification are delegated to better-auth
+// (db/auth.ts); the Drizzle helpers below remain for the admin screens.
 
-import { getCookie, setCookie, deleteCookie } from 'hono/cookie';
 import { db } from '../db/database.ts';
-import { users, sessions, roles, appPermissions } from '../db/schema.ts';
-import { eq, or } from 'drizzle-orm';
+import { users, sessions, roles, appPermissions, accounts } from '../db/schema.ts';
+import { eq, and } from 'drizzle-orm';
 import type { Context, Next } from 'hono';
 import { html } from 'hono/html';
 import { renderSmart } from './hax.ts';
+import { auth } from '../db/auth.ts';
+import { hashPassword } from 'better-auth/crypto';
 
 // ==========================================
 // TYPE DEFINITIONS
@@ -28,44 +30,27 @@ export type SessionUser = {
 // SESSION MANAGEMENT
 // ==========================================
 
-// Get session user from request context
+// Get session user from request context via better-auth
 export async function getSessionUser(c: Context): Promise<SessionUser | null> {
   try {
-    const sessionId = getCookie(c, 'session_id');
-    
-    if (!sessionId) {
+    const session = await auth.api.getSession({
+      headers: c.req.raw.headers,
+    });
+
+    if (!session) {
       return null;
     }
-    
-    // Get session from database
-    const sessionRecord = await db.select().from(sessions).where(eq(sessions.id, sessionId)).get();
-    
-    if (!sessionRecord || !sessionRecord.userId) {
-      return null;
-    }
-    
-    // Check if session has expired
-    if (sessionRecord.expiresAt && new Date(sessionRecord.expiresAt).getTime() < Date.now()) {
-      // Session expired - invalidate it
-      await db.delete(sessions).where(eq(sessions.id, sessionId));
-      return null;
-    }
-    
-    // Get user from database
-    const userRecord = await db.select().from(users).where(eq(users.id, sessionRecord.userId)).get();
-    
-    if (!userRecord) {
-      return null;
-    }
-    
+
+    const user = await db.select().from(users).where(eq(users.id, session.user.id)).get();
+
     return {
-      id: userRecord.id,
-      email: userRecord.email,
-      name: userRecord.name || userRecord.displayName || undefined,
-      username: userRecord.username || undefined,
-      roleId: userRecord.roleId,
-      displayName: userRecord.displayName || undefined,
-      image: userRecord.image || undefined,
+      id: session.user.id,
+      email: session.user.email,
+      name: session.user.name || user?.displayName || undefined,
+      username: session.user.username || undefined,
+      roleId: user?.roleId || 'guest',
+      displayName: user?.displayName || undefined,
+      image: session.user.image || undefined,
     };
   } catch (error) {
     console.error('Error getting session user:', error);
@@ -133,51 +118,34 @@ export async function handleLogin(c: Context) {
     const password = form.get('password') as string;
     
     try {
-      // Find user by username or email
-      const user = await db.select().from(users).where(
-        or(
-          eq(users.username, identifier),
-          eq(users.email, identifier)
-        )
-      ).get();
-      
-      if (!user) {
+      // Let better-auth verify credentials and create the session: it hashes
+      // passwords (scrypt) and issues a signed better-auth.session_token
+      // cookie. No plain-text comparison and no hand-rolled session rows.
+      const response = identifier.includes('@')
+        ? await auth.api.signInEmail({
+            body: { email: identifier, password },
+            asResponse: true,
+          })
+        : await auth.api.signInUsername({
+            body: { username: identifier, password },
+            asResponse: true,
+          });
+
+      if (response.status !== 200) {
         return showLoginPage(c, returnUrl, 'Invalid username or password');
       }
-      
-      // Verify password (plain text comparison for now)
-      // In production, you would use a proper password hashing library
-      if (user.password !== password) {
-        return showLoginPage(c, returnUrl, 'Invalid username or password');
+
+      // Forward the better-auth session cookie to the browser
+      const setCookieHeader = response.headers.get('set-cookie');
+      if (setCookieHeader) {
+        c.header('set-cookie', setCookieHeader, { append: true });
       }
-      
-      // Create a session
-      const sessionId = `sess_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
-      const expiresAt = new Date(Date.now() + 60 * 60 * 24 * 1000); // 24 hours
-      
-      // Insert session into database
-      await db.insert(sessions).values({
-        id: sessionId,
-        userId: user.id,
-        expiresAt,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }).run();
-      
-      // Set session cookie
-      setCookie(c, 'session_id', sessionId, {
-        path: '/',
-        httpOnly: true,
-        maxAge: 60 * 60 * 24 * 7, // 7 days
-        sameSite: 'lax',
-      });
-      
+
       return c.redirect(returnUrl);
     } catch (err) {
       const error = err as Error;
       console.error('Login error:', error);
-      const errorMessage = error.message || 'Login failed';
-      return showLoginPage(c, returnUrl, errorMessage);
+      return showLoginPage(c, returnUrl, 'Invalid username or password');
     }
   }
   
@@ -259,24 +227,21 @@ function showLoginPage(c: Context, returnUrl: string, error?: string) {
 // Logout handler
 export async function handleLogout(c: Context) {
   try {
-    const sessionId = getCookie(c, 'session_id');
-    
-    if (sessionId) {
-      // Invalidate session in database
-      await db.delete(sessions).where(eq(sessions.id, sessionId));
-    }
-    
-    // Clear session cookie
-    deleteCookie(c, 'session_id', {
-      path: '/',
-      httpOnly: true,
+    // Revoke the session server-side via better-auth; it also clears the
+    // session cookie in the response headers.
+    const response = await auth.api.signOut({
+      headers: c.req.raw.headers,
+      asResponse: true,
     });
-    
+
+    const setCookieHeader = response.headers.get('set-cookie');
+    if (setCookieHeader) {
+      c.header('set-cookie', setCookieHeader, { append: true });
+    }
+
     return c.redirect('/login');
   } catch (error) {
     console.error('Logout error:', error);
-    // Still redirect even if there's an error
-    deleteCookie(c, 'session_id', { path: '/' });
     return c.redirect('/login');
   }
 }
@@ -323,21 +288,26 @@ export async function createUser(userData: {
   roleId: string;
 }) {
   try {
+    // Sign up through better-auth so the password is hashed (scrypt) and the
+    // credential account row is created, then fill in the portal-specific
+    // fields (displayName, roleId) directly.
+    const signUp = await auth.api.signUpEmail({
+      body: {
+        username: userData.username,
+        email: userData.email,
+        password: userData.password,
+        name: userData.name || userData.username,
+      },
+    });
+
     const now = new Date();
-    const result = await db.insert(users).values({
-      id: `u-${Date.now()}`,
-      username: userData.username,
-      email: userData.email,
-      password: userData.password,
-      name: userData.name || userData.username,
+    await db.update(users).set({
       displayName: userData.displayName || userData.username,
       roleId: userData.roleId,
-      emailVerified: true,
-      createdAt: now,
       updatedAt: now,
-    }).returning().get();
-    
-    return result;
+    }).where(eq(users.id, signUp.user.id));
+
+    return await getUserById(signUp.user.id);
   } catch (error) {
     console.error('Error creating user:', error);
     throw error;
@@ -357,16 +327,25 @@ export async function updateUser(id: string, userData: {
     const updateData: Record<string, unknown> = {
       updatedAt: new Date(),
     };
-    
+
     if (userData.username !== undefined) updateData.username = userData.username;
     if (userData.email !== undefined) updateData.email = userData.email;
-    if (userData.password !== undefined) updateData.password = userData.password;
     if (userData.name !== undefined) updateData.name = userData.name;
     if (userData.displayName !== undefined) updateData.displayName = userData.displayName;
     if (userData.roleId !== undefined) updateData.roleId = userData.roleId;
-    
+
+    // Never store a raw password on the user row: hash it with better-auth's
+    // crypto API and update the credential account row it manages.
+    if (userData.password !== undefined) {
+      const hashed = await hashPassword(userData.password);
+      await db.update(accounts).set({
+        password: hashed,
+        updatedAt: new Date(),
+      }).where(and(eq(accounts.userId, id), eq(accounts.providerId, 'credential')));
+    }
+
     await db.update(users).set(updateData).where(eq(users.id, id));
-    
+
     return await getUserById(id);
   } catch (error) {
     console.error('Error updating user:', error);
