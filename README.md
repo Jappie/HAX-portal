@@ -105,6 +105,18 @@ Each sub-app can set its own navigation context that updates the global store, e
 - **No escaping issues** - Alpine directives and expressions are preserved
 - **Type-safe props** - Components can still have typed props
 
+### Shared Components Are Mandatory
+
+All views use the shared component set instead of hand-rolled HTML:
+
+- `shared/opui/Button.ts` - Button component with Alpine AJAX support
+- `shared/components/Breadcrumbs.ts` - Breadcrumb navigation
+- `shared/components/MainAside.ts` - Main navigation sidebar
+- `shared/components/SubAside.ts` - Sub-navigation sidebar
+- `shared/components/ThemeMenu.ts` - Theme selection
+
+Buttons that navigate must use the shared `Button` component (never plain `<a href>` or ad-hoc `<button @click>` markup), so every app is fragment-aligned: navigation always swaps the `main-content` partial via Alpine AJAX and updates the navigation store through `ajax:after`.
+
 ## Quick Start
 
 ```bash
